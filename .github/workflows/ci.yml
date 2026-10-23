@@ -13,6 +13,9 @@
 #
 # Las acciones están fijadas a versiones exactas con más de tres meses (revisadas el 22-oct-2026).
 # Para actualizarlas, cambia el número.
+#
+# La imagen está fijada a ubuntu-24.04 y no a ubuntu-latest: GitHub está pasando ubuntu-latest
+# a Ubuntu 26.04 (entre el 19-oct y el 19-nov-2026). Cuando quieras migrar, cambia el número y prueba.
 
 name: CI
 
@@ -31,7 +34,7 @@ concurrency:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Descargar el repo

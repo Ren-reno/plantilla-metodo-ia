@@ -1,6 +1,6 @@
 # «Nombre de la app»
 
-> Repo creado desde la plantilla `plantilla-proyecto`. Reemplaza este título y esta línea por lo que hace tu app, en una o dos frases.
+> Repo creado desde la plantilla `plantilla-metodo-ia`. Reemplaza este título y esta línea por lo que hace tu app, en una o dos frases.
 
 ## Dónde mirar
 
