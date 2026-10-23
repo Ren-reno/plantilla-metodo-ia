@@ -1,0 +1,71 @@
+# CI mínimo de la plantilla. Corre en GitHub (sin IA) en cada push a main y en cada pull request.
+#
+# Hace tres cosas, y cada una se salta sola mientras todavía no aplica:
+#   1. Valida diseño, plan y diagramas, si existe tools/validar.py.
+#   2. Instala dependencias, si existe requirements.txt.
+#   3. Corre los tests, si hay archivos test_*.py (o *_test.py) dentro de tests/.
+#
+# Un paso omitido deja un aviso visible en la ejecución: un CI en verde NO significa
+# que algo se haya probado hasta que existan tests.
+#
+# T-001 (el esqueleto andante) adapta este archivo al stack de la app:
+# versión de Python, base de datos de prueba y comando de test.
+#
+# Las acciones están fijadas a versiones exactas con más de tres meses (revisadas el 22-oct-2026).
+# Para actualizarlas, cambia el número.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Descargar el repo
+        uses: actions/checkout@v7.0.1
+
+      - name: Preparar Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Validar diseño y plan
+        run: |
+          if [ -f tools/validar.py ]; then
+            python tools/validar.py
+          else
+            echo "::notice::Todavía no existe tools/validar.py: se omite la validación."
+          fi
+
+      - name: Instalar dependencias
+        run: |
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          else
+            echo "::notice::No hay requirements.txt: no se instaló nada."
+          fi
+
+      - name: Correr tests
+        run: |
+          if [ -n "$(find tests -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit 2>/dev/null)" ]; then
+            if ! python -m pytest --version >/dev/null 2>&1; then
+              echo "::error::Hay tests pero pytest no está instalado. Decláralo en requirements.txt o adapta este paso al stack (lo hace T-001)."
+              exit 1
+            fi
+            python -m pytest
+          else
+            echo "::warning::Todavía no hay tests en tests/: este paso no probó nada."
+          fi
