@@ -21,7 +21,7 @@ Las **decisiones** (`docs/decisiones/`) y los **tests** atraviesan las cuatro et
 
 ## Qué funciona hoy y qué falta
 
-Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` todavía no existen**: se construyen de a una. Los pasos que dependen de ellas llevan la marca *(pendiente)*; mientras no existan, esos pasos hay que hacerlos a mano. Cuando una herramienta exista, se quita su marca.
+Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existe `init_diseno.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca.
 
 ## Empezar una app nueva
 
@@ -49,7 +49,7 @@ Con el diseño cerrado:
    git clone URL-DEL-REPO-NUEVO
    ```
 
-3. **Copia `DISENO.md` a la raíz del repo y corre `python tools/init_diseno.py DISENO.md`** *(pendiente)*. *Para qué:* reparte el diseño en `docs/` (requisitos, decisiones, modelo…) sin que cortes y pegues, y te avisa con el número de línea si el formato tiene errores.
+3. **Copia `DISENO.md` a la raíz del repo y corre `python tools/init_diseno.py DISENO.md`.** *Para qué:* reparte el diseño en `docs/` (un archivo por requisito y por decisión, más el contexto y el modelo) sin que cortes y pegues. Si el formato tiene errores, te dice en qué línea y no escribe nada. El original se mueve a `docs/archivo/`. Si quieres revisar sin escribir nada, agrega `--check` al final; y si `python` no se reconoce en tu PowerShell, prueba con `py`.
 4. **Revisa con `git status` y `git diff`; luego commit y push.** *Para qué:* ver qué se repartió antes de guardarlo.
 5. **Pide el plan, repártelo con `python tools/init_plan.py` y valídalo con `python tools/validar.py`** *(pendiente)*. *Para qué:* el plan queda en tarjetas, y el validador comprueba que no falte ni sobre nada.
 

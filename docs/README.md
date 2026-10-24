@@ -20,7 +20,7 @@ Una plantilla recién creada no trae varios de esos archivos: los generan las he
 
 | Archivo o carpeta | Lo genera |
 |---|---|
-| `requisitos/`, `decisiones/`, `modelo.md` | `tools/init_diseno.py`, a partir de `DISENO.md` |
+| `requisitos/` (un archivo por requisito, más `contexto.md`), `decisiones/` (una decisión por archivo), `modelo.md` | `tools/init_diseno.py`, a partir de `DISENO.md` |
 | `plan/tareas/`, `plan/cobertura.md` | `tools/init_plan.py`, a partir del plan |
 | `plan/ESTADO.md` y el índice de `decisiones/` | `tools/cerrar.py` |
 

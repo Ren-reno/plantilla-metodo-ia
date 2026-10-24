@@ -1,9 +1,10 @@
 # CI mínimo de la plantilla. Corre en GitHub (sin IA) en cada push a main y en cada pull request.
 #
-# Hace tres cosas, y cada una se salta sola mientras todavía no aplica:
+# Hace cuatro cosas, y cada una se salta sola mientras todavía no aplica:
 #   1. Valida diseño, plan y diagramas, si existe tools/validar.py.
-#   2. Instala dependencias, si existe requirements.txt.
-#   3. Corre los tests, si hay archivos test_*.py (o *_test.py) dentro de tests/.
+#   2. Prueba las herramientas de tools/, si existe tools/tests/.
+#   3. Instala dependencias, si existe requirements.txt.
+#   4. Corre los tests, si hay archivos test_*.py (o *_test.py) dentro de tests/.
 #
 # Un paso omitido deja un aviso visible en la ejecución: un CI en verde NO significa
 # que algo se haya probado hasta que existan tests.
@@ -51,6 +52,14 @@ jobs:
             python tools/validar.py
           else
             echo "::notice::Todavía no existe tools/validar.py: se omite la validación."
+          fi
+
+      - name: Probar las herramientas de tools/
+        run: |
+          if [ -d tools/tests ]; then
+            python -m unittest discover -s tools/tests -v
+          else
+            echo "::notice::No hay tools/tests: se omite este paso."
           fi
 
       - name: Instalar dependencias
