@@ -7,7 +7,7 @@ Herramientas locales del método. Son scripts de Python que usan solo la bibliot
 | Herramienta | Para qué sirve | Orden | Estado |
 |---|---|---|---|
 | `init_diseno.py` | Reparte `DISENO.md` tal cual en `docs/`, guarda el original en `docs/archivo/` y avisa de errores de formato con el número de línea | 1 | listo |
-| `init_plan.py` | Reparte el plan en `docs/plan/tareas/T-xxx.md` y escribe la matriz de cobertura en `docs/plan/cobertura.md` | 1 | pendiente |
+| `init_plan.py` | Reparte el plan en `docs/plan/tareas/T-xxx.md` y escribe la matriz de cobertura en `docs/plan/cobertura.md` | 1 | pendiente (formato por decidir) |
 | `bundle.py T-007` | Arma el paquete de contexto de una tarea para pegarlo en un LLM | 2 | pendiente |
 | `aplicar.py` | Aplica el parche más reciente de tu carpeta de parches, con reintentos y diagnóstico | 3 | pendiente |
 | `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | pendiente |
@@ -42,6 +42,15 @@ Para probarla sin riesgo con un diseño de ejemplo (no escribe nada):
 ```powershell
 python tools/init_diseno.py tools/tests/fixtures/DISENO-ejemplo.md --check
 ```
+
+## Chequeos acordados para las herramientas que faltan
+
+Salieron de revisar ideas de otros flujos de trabajo con IA (octubre de 2026). Se prefiere un chequeo aquí antes que una regla más en `00-LEEME-IA.md`: los LLM a veces ignoran las reglas escritas, y un chequeo no.
+
+- **`bundle.py`:** se niega a armar el bundle si una tarea de `Depende de:` no está «hecha» (línea base en verde); `--forzar` lo salta bajo tu responsabilidad. Se suma a la compuerta de ADR no aceptados.
+- **`cerrar.py`:** avisa de archivos tocados fuera de `Tocar:`, dependencias nuevas, cambios en `contratos/` y decisiones que afectan a otras tareas. «Tests existentes modificados» es un aviso y, con `--reintento` (segundo intento de una tarea), un error.
+- **`validar.py`:** toda tarjeta tiene la línea `Fuera de alcance:`, y los `Ejemplos aprobados`, si los hay, tienen la forma `entrada → resultado`.
+- **`init_plan.py`:** decisión pendiente. Antes de construirla hay que fijar el formato del plan: todas las tarjetas desde el inicio, o un backlog de una línea por tarea con tarjetas completas solo para la ola actual.
 
 ## Si vas a construir una herramienta
 

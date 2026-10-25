@@ -6,6 +6,10 @@
   Identificadores: C criterio propio (R si viene de rúbrica) · RF requisito funcional · RN regla de negocio ·
   RNF requisito no funcional · ADR decisión · P pregunta abierta · S supuesto · T tarea.
   Lo que el enunciado no dice se marca como supuesto (S-xx) o pregunta (P-xx). No inventes cifras.
+
+  Antes de dar el diseño por cerrado, pregunta (máximo 5 preguntas por tanda) por lo que cuesta cambiar después:
+  ¿un usuario o varios?, ¿hay login?, ¿idiomas?, ¿datos sensibles o privados?, ¿dónde corre (web, escritorio, móvil)?,
+  ¿cuántos datos o usuarios? Lo que quede sin resolver va como pregunta P-xx con [BLOQUEA T-xxx], o como ADR propuesto.
 -->
 # DISENO — «nombre de la app»
 

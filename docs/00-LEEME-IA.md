@@ -12,12 +12,12 @@ El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usu
 
 1. Haz solo la tarea del bundle.
 2. Usa solo lo que trae el bundle. No supongas archivos que no estén en el árbol.
-3. Tests primero: cada criterio de aceptación queda como un test.
-4. Modifica solo los archivos de `Tocar:`. En `Tocar:` el `*` es recursivo: `src/inicio/*` incluye sus subcarpetas. Si necesitas otro archivo, no lo toques: anótalo en *Pendientes* del reporte.
+3. Tests primero: cada criterio de aceptación queda como un test. Los «Ejemplos aprobados» de la tarjeta van en los tests tal cual, con sus valores esperados.
+4. Modifica solo los archivos de `Tocar:`. En `Tocar:` el `*` es recursivo: `src/inicio/*` incluye sus subcarpetas. Si necesitas otro archivo, no lo toques: anótalo en *Pendientes* del reporte. Lo que la tarjeta pone en «Fuera de alcance» no se construye, aunque parezca razonable.
 5. Dependencias nuevas: decláralas en el archivo de dependencias y en *Decisiones tomadas*.
 6. Decisión que afecta a otras tareas: **pregunta** antes de seguir (es lo único que puedes escribir fuera de los tres bloques). Decisión local: decídela y regístrala en el reporte.
 7. No edites archivos de estado compartido: `docs/plan/` (incluido `ESTADO.md`) ni `docs/decisiones/`. Los mantiene `tools/cerrar.py`.
-8. Máximo dos intentos por fallo. Al segundo, para y reporta qué probaste.
+8. Máximo dos intentos por fallo. Al segundo, para y reporta qué probaste. Al reintentar tras tests que fallan, **no modifiques los tests que ya existían**: corrige el código.
 9. Entrega los tres bloques como se explica en «Entrega».
 10. Respeta las «Convenciones» y usa solo los comandos de «Comandos» (más abajo).
 
@@ -27,7 +27,8 @@ El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usu
 - **Leer (solo esto)**: los únicos documentos que debes consultar. Un ADR citado ahí ya está aceptado.
 - **Contrato**: cómo llamas a otro módulo. Si la pieza real aún no existe, usa el *stub* que indica la tarjeta; no implementes el otro módulo.
 - **Produce**: contratos u otros archivos que esta tarea deja listos para otras tareas.
-- **Tocar** / **No tocar**: lo que puedes y no puedes cambiar.
+- **Tocar** / **No tocar**: lo que puedes y no puedes cambiar. **Fuera de alcance**: lo que no debes construir en esta tarea.
+- **Ejemplos aprobados** (opcionales): casos «entrada → resultado» que la persona aprobó. Inclúyelos en los tests tal cual; no cambies sus valores esperados.
 - **Criterios de aceptación**: máximo 4. Los marcados `[verifica: CI]` solo se comprueban en el CI de GitHub: impleméntalos, pero di en el reporte que no los verificaste.
 - **Comando de test**: el de la sección «Comandos», aplicado solo a la ruta que indica la tarjeta.
 
@@ -42,6 +43,7 @@ Un solo `git diff` en formato unificado:
 - Rutas con `a/` y `b/`, 3 líneas de contexto, archivos nuevos con `--- /dev/null`.
 - Termina con un salto de línea (un parche cortado da *corrupt patch*).
 - El usuario lo aplica con `git apply`. Si falla con *corrupt patch*, repite con `--recount`: por eso los números de los encabezados `@@` pueden ser aproximados. Las líneas de contexto no: deben ser exactas.
+- Si el usuario te pega tests que fallan, corrige el código, no los tests: el parche nuevo no debe modificar ningún test que ya existía. Si crees que un test está mal, dilo y espera su respuesta.
 - Si el usuario te pega un error de `git apply`, responde solo con la parte corregida (el archivo y el bloque `@@` que falló, con sus encabezados `---` y `+++`), no con el parche entero.
 
 ### 2. Reporte

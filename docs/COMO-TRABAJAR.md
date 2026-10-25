@@ -59,7 +59,7 @@ Textos para copiar y pegar. Si algo te cuesta entender, agrega: «explícame con
 
 **Diseño.** Adjunta tu enunciado o tus notas y `docs/plantillas/diseno.md` (o tu `DISENO.md` si ya existe):
 
-> Vamos a diseñar una app. Ordena lo que te cuento en el formato de `diseno.md`. Pregunta solo lo que falte; todo lo que yo no haya dicho márcalo como supuesto (S-xx) o pregunta (P-xx), sin inventar cifras. Cuando terminemos, devuélveme el `DISENO.md` completo y actualizado.
+> Vamos a diseñar una app. Ordena lo que te cuento en el formato de `diseno.md`. Pregunta solo lo que falte; todo lo que yo no haya dicho márcalo como supuesto (S-xx) o pregunta (P-xx), sin inventar cifras. Antes de dar el diseño por cerrado, pregúntame (máximo 5 preguntas por tanda) por lo que cuesta cambiar después: ¿un usuario o varios?, ¿hay login?, ¿idiomas?, ¿datos sensibles?, ¿dónde corre (web, escritorio, móvil)?, ¿cuántos datos? Lo que quede sin resolver anótalo como pregunta P-xx con [BLOQUEA] o como ADR propuesto. Cuando terminemos, devuélveme el `DISENO.md` completo y actualizado.
 
 **Diagramas.** Adjunta `DISENO.md`:
 
@@ -72,6 +72,7 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 > Con esto, arma el plan:
 >
 > - Una tarjeta por tarea, con el formato de `tarjeta.md`: máximo 4 criterios y un solo módulo propio por tarjeta.
+> - Cada tarjeta lleva «Fuera de alcance». Para las reglas con números, fechas o dinero, propón 2 a 4 ejemplos aprobados (entrada → resultado esperado) para que yo los apruebe.
 > - Antes de T-001, registra como ADR las decisiones que arrastra el stack (base de datos local, versión mínima del lenguaje).
 > - T-001 es el esqueleto andante: la app arranca, un test pasa y el CI corre. También completa las secciones *Convenciones* y *Comandos* de `docs/00-LEEME-IA.md` y adapta `.github/workflows/ci.yml` al stack.
 > - Rebanadas verticales ordenadas por peso, riesgo y dependencias; siempre algo ejecutable.
@@ -89,11 +90,17 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 > Al aplicar el parche me salió este error: (pega aquí el error). Devuélveme solo la parte corregida (el archivo y el bloque `@@` que falló), no el parche entero.
 
+**Un test falló.** En el mismo chat:
+
+> Al correr los tests me fallan estos: (pega aquí la salida). Corrige el código, no los tests. Si crees que algún test está mal, dímelo y espera mi respuesta. El parche nuevo no debe modificar los tests que ya existían.
+
 **Revisión de coherencia** (en cada hito). Adjunta el índice de decisiones, los ADR relacionados con el hito y la salida de `git log --oneline`:
 
 > Revisa la coherencia del proyecto. Dime si hay decisiones que se contradicen, decisiones tomadas sin registrar o tareas que se saltaron un contrato.
 
 ## El ciclo de cada tarea (etapa 4)
+
+**Antes de cada tarea, línea base en verde.** Confirma que la tarea anterior está terminada: los tests pasan en tu computador y el CI del último commit está en verde. *Para qué:* si empiezas sobre algo que ya está roto, nadie sabrá si un fallo nuevo es del LLM o heredado, y los errores se acumulan. Cuando exista `bundle.py`, se negará a armar el bundle si una tarea de `Depende de:` no está «hecha».
 
 1. **Preparar:** `python tools/bundle.py T-007` *(pendiente)*. *Para qué:* arma un solo archivo con lo justo que el LLM necesita; así gasta pocos tokens y no se confunde. Si se niega a armarlo, es porque la tarea cita una decisión que aún no aceptaste: acéptala primero.
 2. **Implementar:** pega el bundle en el LLM que prefieras. Te devuelve **tres bloques**: un parche, un reporte y los comandos.
@@ -145,12 +152,24 @@ Para otras terminales (CMD, Git Bash, macOS, Linux), mira la tabla de equivalent
 4. **Dice *patch does not apply*:** el contexto no coincide. Pega el error al LLM y pídele **solo ese bloque** corregido (hay un texto para eso arriba).
 5. **Último recurso:** `git apply --reject` aplica lo que encaje y deja archivos `*.rej` con lo que no. Revísalos, aplica a mano lo que falte y **bórralos antes del commit** (si no, el `git add -A` los incluiría). Si los parches fallan muy seguido, avísalo: hay un plan B de entrega (archivos completos, o bloques «buscar y reemplazar» sin números de línea).
 
+## Al cerrar cada rebanada: prueba de uso
+
+Los tests pueden pasar y la app, aun así, no servir. Al terminar cada rebanada (el grupo de tareas que deja algo usable), corre la app y haz tú mismo un recorrido corto, como lo haría quien la va a usar. *Para qué:* es la única comprobación que no depende de lo que escribió el LLM.
+
+1. Pide el recorrido a un LLM, con `docs/modelo.md` adjunto:
+
+   > Con los flujos principales de este modelo, escríbeme una prueba de uso de 3 a 5 pasos para lo que ya funciona: qué hacer en cada paso y qué debería pasar.
+
+2. Haz los pasos. Si alguno falla, anótalo: es una tarea nueva (con su test), no un parche suelto.
+3. Aprovecha el hito para la *revisión de coherencia* (el texto está arriba, entre los prompts).
+
 ## Hábitos que ahorran tokens y esperas
 
 - **Un chat por tarea.** Cada mensaje hace que el LLM relea todo el chat: cuanto más largo, más cuesta. Si un chat se alarga, ciérralo y retoma con un bundle o un archivo nuevo.
 - **Máximo dos intentos por fallo.** Al segundo, el LLM debe parar y reportar qué probó; seguir insistiendo gasta sesión sin avanzar.
 - **Tareas chicas:** una sesión, hasta 4 criterios, un solo módulo propio.
 - **Decide pronto lo que afecta a otras tareas.** Un LLM que decide en silencio algo que toca otras tareas es la forma más fácil de que el proyecto se contradiga.
+- **Un error que se repite se arregla en el método, no en el chat.** Si el mismo problema aparece dos veces (en cualquier LLM), agrega una regla corta a `00-LEEME-IA.md` o, mejor, un chequeo a `tools/cerrar.py`. *Para qué:* el método mejora con el uso en vez de repetir fallos. Un chequeo automático pesa más que una regla escrita, porque los LLM a veces ignoran las reglas.
 
 ## Avisos que no son errores
 
@@ -175,3 +194,6 @@ Para otras terminales (CMD, Git Bash, macOS, Linux), mira la tabla de equivalent
 | Parche (patch o diff) | Archivo de texto con los cambios exactos, que se aplica con `git apply` |
 | Entorno del usuario | Terminal, carpeta de parches y carpeta del repo: lo que permite dar comandos listos para pegar |
 | CI | Pruebas automáticas que GitHub corre en cada cambio |
+| Fuera de alcance | Lo que una tarea (o la app) explícitamente no construye, aunque parezca razonable; corta el código que nadie pidió |
+| Ejemplo aprobado | Caso concreto «entrada → resultado esperado» que tú apruebas; los tests lo incluyen tal cual y su valor esperado no se cambia |
+| Línea base en verde | Tests locales y CI pasando antes de empezar una tarea nueva |

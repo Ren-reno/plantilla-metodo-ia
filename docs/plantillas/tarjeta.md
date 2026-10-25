@@ -9,7 +9,10 @@
   - Tocar: el * es recursivo. Si la tarea crea un módulo, lista el módulo completo y los archivos compartidos de
     configuración con la parte exacta que toca, por ejemplo src/config/settings.py (solo INSTALLED_APPS).
     Las tareas que tocan un archivo compartido no corren en paralelo.
-  - Contrato y Produce son opcionales: borra esas líneas si no aplican.
+  - Fuera de alcance: lo que NO se construye en esta tarea, aunque parezca razonable. Corta el código que nadie pidió.
+  - Ejemplos aprobados: para reglas con números, fechas o dinero, 2 a 4 ejemplos «entrada → resultado esperado» que la persona
+    aprueba. Los tests los incluyen tal cual y nadie cambia sus valores esperados.
+  - Contrato, Produce y Ejemplos aprobados son opcionales: borra esas líneas si no aplican.
 -->
 # T-«NNN» · «Título»
 Estado: pendiente · Tamaño: «S o M» · Depende de: «T-xxx, o —» · Cubre: «C1 (peso), RF-001»
@@ -19,8 +22,11 @@ Leer (solo esto): docs/00-LEEME-IA.md · «docs/modelo.md#entidad» · «docs/de
 Produce: «contratos u otros archivos que esta tarea deja a otras»
 Tocar: «src/modulo/*» · «tests/modulo/*»
 No tocar: «lo que no debe cambiar»
+Fuera de alcance: «lo que NO se construye en esta tarea, aunque parezca razonable»
 Criterios de aceptación (→ tests):
   - «criterio 1»
   - [verifica: CI] «criterio que solo se comprueba en el CI»
+Ejemplos aprobados:
+  - «entrada» → «resultado esperado»
 Comando de test: ver docs/00-LEEME-IA.md (solo sobre «tests/modulo/*»)
 Entrega: un parche (git diff) + reporte + comandos para aplicar
