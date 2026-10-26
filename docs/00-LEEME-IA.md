@@ -24,6 +24,7 @@ El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usu
 ## Cómo leer la tarjeta
 
 - **Cubre**: criterios y requisitos que la tarea satisface. **Depende de**: tareas que ya deben estar hechas.
+- **Modo** (opcional): `estricto` = la tarea son dos parches y el usuario te dice cuál toca. Parche 1: solo tests y, si hace falta para importarlos, un esqueleto que lance «no implementado» (en Python, `NotImplementedError`); deben fallar por falta de funcionalidad, no por un error de importación. Su bloque de comandos termina en el test, sin commit (el rojo es lo esperado); el commit (`test: …`) va en un segundo bloque que el usuario pega solo si el rojo es el correcto. Parche 2: implementa sin tocar esos tests (vienen en `Leer:` y `No tocar:`).
 - **Leer (solo esto)**: los únicos documentos que debes consultar. Un ADR citado ahí ya está aceptado.
 - **Contrato**: cómo llamas a otro módulo. Si la pieza real aún no existe, usa el *stub* que indica la tarjeta; no implementes el otro módulo.
 - **Produce**: contratos u otros archivos que esta tarea deja listos para otras tareas.
@@ -43,7 +44,7 @@ Un solo `git diff` en formato unificado:
 - Rutas con `a/` y `b/`, 3 líneas de contexto, archivos nuevos con `--- /dev/null`.
 - Termina con un salto de línea (un parche cortado da *corrupt patch*).
 - El usuario lo aplica con `git apply`. Si falla con *corrupt patch*, repite con `--recount`: por eso los números de los encabezados `@@` pueden ser aproximados. Las líneas de contexto no: deben ser exactas.
-- Si el usuario te pega tests que fallan, corrige el código, no los tests: el parche nuevo no debe modificar ningún test que ya existía. Si crees que un test está mal, dilo y espera su respuesta.
+- Si el usuario te pega tests que fallan, corrige el código, no los tests: el parche nuevo no debe modificar ningún test que ya existía. Si crees que un test está mal, dilo y espera su respuesta. El parche anterior sigue aplicado en su repo, sin guardar: el nuevo parte de ese estado.
 - Si el usuario te pega un error de `git apply`, responde solo con la parte corregida (el archivo y el bloque `@@` que falló, con sus encabezados `---` y `+++`), no con el parche entero.
 
 ### 2. Reporte
@@ -57,26 +58,26 @@ Sigue `docs/plantillas/reporte.md`: seis secciones, en este orden y con estos t�
 
 ### 3. Comandos para aplicar
 
-Un bloque de comandos listo para pegar, con la terminal y las rutas del «Entorno del usuario» del bundle. Modelo para PowerShell:
+Un bloque de comandos listo para pegar, con la terminal y las rutas del «Entorno del usuario» del bundle. PowerShell no se detiene solo cuando falla un comando externo (un test, por ejemplo), así que cada paso lleva su freno: corre solo si el anterior salió bien. Modelo para PowerShell:
 
 ```powershell
 cd "<carpeta del repo>"
 git status --short   # debe salir vacío
 git apply --check "<carpeta de parches>\<tarea>-<tema>.patch"
-git apply "<carpeta de parches>\<tarea>-<tema>.patch"
-<comando de test de la tarjeta>   # solo si la tarjeta lo trae
-git add -A
-git commit -m "<mensaje de commit del reporte>"
-git push
+if ($LASTEXITCODE -eq 0) { git apply "<carpeta de parches>\<tarea>-<tema>.patch" }
+if ($LASTEXITCODE -eq 0) { <comando de test de la tarjeta> }   # solo si la tarjeta lo trae
+if ($LASTEXITCODE -eq 0) { git add -A; git commit -m "<mensaje de commit del reporte>" }
+if ($LASTEXITCODE -eq 0) { git push }
+if ($LASTEXITCODE -ne 0) { Write-Host "Algo falló: el bloque se detuvo ahí. Pega aquí lo que dice la terminal." }
 ```
 
 Reglas del bloque:
 
 - Tú propones el nombre del archivo (`<tarea>-<tema>.patch`) y lo usas igual en todos los comandos.
 - Rutas siempre entre comillas.
-- El comando de test, si la tarjeta lo trae, va entre `git apply` y `git add -A`.
+- El comando de test, si la tarjeta lo trae, va entre `git apply` y el commit.
 - El mensaje de commit sale del reporte y es un commit convencional.
-- `git status --short` vacío al inicio es lo que hace seguro el `git add -A`: así solo entra lo del parche.
+- `git status --short` vacío al inicio es lo que hace seguro el `git add -A`: así solo entra lo del parche. En un reintento tras un test fallido, el parche anterior sigue aplicado sin guardar: `git status --short` listará sus archivos (cámbiale el comentario) y el commit guarda los dos parches juntos.
 
 Equivalentes para otras terminales:
 
@@ -85,6 +86,8 @@ Equivalentes para otras terminales:
 | PowerShell | `"$env:USERPROFILE\Downloads\x.patch"` | `cd "<ruta>"` | `#` |
 | CMD | `"%USERPROFILE%\Downloads\x.patch"` | `cd /d "<ruta>"` | `REM` |
 | Git Bash, macOS, Linux | `"$HOME/Downloads/x.patch"` (Linux en español: `"$HOME/Descargas/x.patch"`) | `cd "<ruta>"` | `#` |
+
+En CMD, Git Bash, macOS y Linux el mismo freno se logra uniendo los comandos con `&&`: se detienen en el primero que falla.
 
 ### Si falta el «Entorno del usuario»
 
