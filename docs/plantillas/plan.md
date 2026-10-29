@@ -1,5 +1,5 @@
 <!--
-  Plantilla de plan por olas: un solo archivo, PLAN.md, que un LLM llena y que tools/init_plan.py reparte (pendiente).
+  Plantilla de plan por olas: un solo archivo, PLAN.md, que un LLM llena y que tools/init_plan.py reparte.
   Los títulos `## Backlog`, `## Matriz de cobertura` y `## Tarjetas de la ola N` son exactos: las herramientas los buscan.
   Lo que va entre «» se reemplaza. Borra este comentario en el plan real.
 
@@ -16,8 +16,8 @@
   - Las tarjetas REF-NN (refactor) no van en el backlog ni en la matriz: nacen en el chat de hito.
   - Primer archivo (ola 1): lleva las tres secciones. Archivos siguientes (PLAN-ola2.md, PLAN-ola3.md…): solo
     `## Tarjetas de la ola N`, porque escribir las tarjetas de la ola siguiente es rutina.
-  - Cambiar el backlog (orden, dependencias, tareas nuevas) es replanificar: archivo nuevo con las tres secciones,
-    versión +1 y la línea `Motivo del cambio:`.
+  - Cambiar el backlog (orden, dependencias, tareas nuevas) es replanificar: archivo nuevo (PLAN-v2.md) con las tres
+    secciones, versión +1 y la línea `Motivo del cambio:`.
 -->
 # PLAN — «nombre de la app»
 > Versión «1» · «fecha» · fuente: «DISENO.md, versión»
