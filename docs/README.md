@@ -9,6 +9,7 @@ Si necesitas saber **X**, mira **Y**:
 | Qué datos maneja | `modelo.md` y `diagramas/` |
 | Cómo se comunican las partes | `contratos/` |
 | Qué está hecho y qué falta | `plan/ESTADO.md` |
+| Qué tareas forman el plan y qué cubre cada una | `plan/backlog.md` y `plan/cobertura.md` |
 | Cómo escribir código y qué comandos usar | `00-LEEME-IA.md` |
 | Cómo trabajar con este repo (guía para ti) | `COMO-TRABAJAR.md` |
 | Los formatos en blanco (diseño, ADR, tarjeta, reporte) | `plantillas/` |
@@ -21,7 +22,7 @@ Una plantilla recién creada no trae varios de esos archivos: los generan las he
 | Archivo o carpeta | Lo genera |
 |---|---|
 | `requisitos/` (un archivo por requisito, más `contexto.md`), `decisiones/` (una decisión por archivo), `modelo.md` | `tools/init_diseno.py`, a partir de `DISENO.md` |
-| `plan/tareas/`, `plan/cobertura.md` | `tools/init_plan.py`, a partir del plan |
+| `plan/backlog.md`, `plan/cobertura.md`, `plan/tareas/` | `tools/init_plan.py`, a partir del plan |
 | `plan/ESTADO.md` y el índice de `decisiones/` | `tools/cerrar.py` |
 
 `plan/ESTADO.md` y el índice de decisiones **no se editan a mano**: los escribe siempre `tools/cerrar.py`, para que nunca choquen dos escritores.

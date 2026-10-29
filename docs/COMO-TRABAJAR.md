@@ -36,7 +36,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 ## Qué funciona hoy y qué falta
 
-Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existe `init_diseno.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. Los formatos del plan por olas, del mini-diseño de cambio y de las tarjetas rápida y de refactor ya están definidos en `docs/plantillas/`, pero ninguna herramienta los lee todavía.
+Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py` e `init_plan.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
 
 ## Empezar una app nueva
 
@@ -66,7 +66,7 @@ Con el diseño cerrado:
 
 3. **Copia `DISENO.md` a la raíz del repo y corre `python tools/init_diseno.py DISENO.md`.** *Para qué:* reparte el diseño en `docs/` (un archivo por requisito y por decisión, más el contexto y el modelo) sin que cortes y pegues. Si el formato tiene errores, te dice en qué línea y no escribe nada. El original se mueve a `docs/archivo/`. Si quieres revisar sin escribir nada, agrega `--check` al final; y si `python` no se reconoce en tu PowerShell, prueba con `py`.
 4. **Revisa con `git status` y `git diff`; luego commit y push.** *Para qué:* ver qué se repartió antes de guardarlo.
-5. **Pide el plan por olas, repártelo con `python tools/init_plan.py PLAN.md` y valídalo con `python tools/validar.py`** *(pendiente)*. *Para qué:* queda la lista completa de tareas (el backlog) y su cuadro de cobertura, con tarjetas completas solo para la primera ola. Las demás se escriben cuando les llega el turno, como los planos de detalle de cada piso: se dibujan cuando el piso anterior ya está construido y se puede medir. El validador comprueba que no falte ni sobre nada. Mientras las herramientas no existan, copia tú cada parte a su archivo: `docs/plan/backlog.md`, `docs/plan/cobertura.md` y una tarjeta por archivo en `docs/plan/tareas/`.
+5. **Pide el plan por olas y repártelo con `python tools/init_plan.py PLAN.md`; después, valídalo con `python tools/validar.py`** *(validar.py: pendiente)*. *Para qué:* `init_plan.py` revisa el formato y deja en `docs/plan/` la lista completa de tareas (el backlog), su cuadro de cobertura y las tarjetas completas solo de la primera ola. Las demás se escriben cuando les llega el turno, como los planos de detalle de cada piso: se dibujan cuando el piso anterior ya está construido y se puede medir. Si el formato tiene errores, te dice en qué línea y no escribe nada; con `--check` solo revisa. El original se mueve a `docs/archivo/`. El validador comprobará que no falte ni sobre nada; mientras no exista, repasa tú la matriz de cobertura: que cada criterio llegue a alguna tarea y que ninguna tarea quede sin criterio.
 
 ## Qué pedirle a un LLM en cada etapa
 
@@ -236,8 +236,8 @@ Los tests pueden pasar y la app, aun así, no servir. Al terminar cada rebanada 
 **Después, el chat de hito.** Un chat nuevo por rebanada, de preferencia con otro LLM. *Para qué:* unos ojos frescos revisan lo hecho, miran si el código se está enredando y dejan escritas las tarjetas de la ola siguiente, todo en un solo chat para gastar menos. Adjunta la salida de `git ls-files` (el árbol real), el índice de decisiones, los ADR relacionados con la rebanada, la salida de `git log --oneline`, `docs/plan/backlog.md` y `docs/plantillas/tarjeta.md`, y pega el texto «Chat de hito» (arriba, entre los prompts).
 
 - Si el LLM propone un refactor (una tarjeta `REF-NN`), se ejecuta como cualquier tarea, con la regla extra de que los tests no cambian y siguen verdes, **antes** de escribir las tarjetas de la ola siguiente. *Para qué:* así las tarjetas se escriben sobre un árbol ya ordenado y no sobre uno que va a cambiar. Cuando termine, vuelve al mismo chat con el `git ls-files` nuevo y pídele el paso 3.
-- Las tarjetas nuevas se reparten con `python tools/init_plan.py PLAN-ola2.md` *(pendiente)*; mientras no exista, copia cada tarjeta a `docs/plan/tareas/`.
-- Escribir las tarjetas de la ola siguiente es rutina. **Cambiar el backlog** (orden, dependencias, tareas nuevas) es replanificar: se guarda como versión 2, con su motivo (formato en `docs/plantillas/plan.md`).
+- Las tarjetas nuevas se reparten con `python tools/init_plan.py PLAN-ola2.md` (un archivo con solo `## Tarjetas de la ola 2`). *Para qué:* las verifica contra el backlog guardado y no pisa las tarjetas que ya existen.
+- Escribir las tarjetas de la ola siguiente es rutina. **Cambiar el backlog** (orden, dependencias, tareas nuevas) es replanificar: se guarda como un archivo nuevo, `PLAN-v2.md`, con las tres secciones, la versión siguiente y su `Motivo del cambio:` (formato en `docs/plantillas/plan.md`), y se reparte con `python tools/init_plan.py PLAN-v2.md`. *Para qué:* reemplaza `backlog.md` y `cobertura.md` por los nuevos y deja como están las tarjetas que ya existen.
 
 ## Hábitos que ahorran tokens y esperas
 
