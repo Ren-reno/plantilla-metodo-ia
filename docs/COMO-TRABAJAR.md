@@ -36,7 +36,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 ## Qué funciona hoy y qué falta
 
-Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py` e `init_plan.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
+Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py`, `init_plan.py` y `bundle.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
 
 ## Empezar una app nueva
 
@@ -109,7 +109,7 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 > Implementa la tarea de este bundle siguiendo las reglas de `00-LEEME-IA.md`. Responde solo con los tres bloques: parche, reporte y comandos.
 
-**Tarea en modo estricto** (la tarjeta dice `Modo: estricto`; la explicación está más abajo). Pega el bundle debajo de uno de estos textos, según la fase. Mientras `bundle.py` no exista, adjunta tú los tests del parche 1 en la fase 2:
+**Tarea en modo estricto** (la tarjeta dice `Modo: estricto`; la explicación está más abajo). Pega el bundle debajo de uno de estos textos, según la fase. En la fase 2, arma el bundle con `python tools/bundle.py T-007 --parche2`: suma los tests del parche 1.
 
 > **Parche 1.** Haz solo la fase 1 de la tarea de este bundle: escribe los tests y, si hace falta para poder importarlos, un esqueleto que lance «no implementado». Los tests deben fallar por falta de funcionalidad, no por un error de importación. Responde solo con los tres bloques; el bloque de comandos termina en el test, sin commit, y el commit va en un segundo bloque aparte.
 
@@ -129,9 +129,9 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 ## El ciclo de cada tarea (etapa 4)
 
-**Antes de cada tarea, línea base en verde.** Confirma que la tarea anterior está terminada: los tests pasan en tu computador y el CI del último commit está en verde. *Para qué:* si empiezas sobre algo que ya está roto, nadie sabrá si un fallo nuevo es del LLM o heredado, y los errores se acumulan. Cuando exista `bundle.py`, se negará a armar el bundle si una tarea de `Depende de:` no está «hecha».
+**Antes de cada tarea, línea base en verde.** Confirma que la tarea anterior está terminada: los tests pasan en tu computador y el CI del último commit está en verde. *Para qué:* si empiezas sobre algo que ya está roto, nadie sabrá si un fallo nuevo es del LLM o heredado, y los errores se acumulan. `bundle.py` se niega a armar el bundle si una tarea de `Depende de:` no está «hecha» (una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`; `--forzar` salta esta compuerta, bajo tu responsabilidad).
 
-1. **Preparar:** `python tools/bundle.py T-007` *(pendiente)*. *Para qué:* arma un solo archivo con lo justo que el LLM necesita; así gasta pocos tokens y no se confunde. Si se niega a armarlo, es porque la tarea cita una decisión que aún no aceptaste: acéptala primero.
+1. **Preparar:** `python tools/bundle.py T-007`. *Para qué:* arma un solo archivo, `bundles/T-007.md`, con lo justo que el LLM necesita; así gasta pocos tokens y no se confunde. Ábrelo, copia todo su contenido y pégalo en el LLM. Si se niega a armarlo, te dice por qué (todos los motivos juntos). Lo más común es que la tarea cite una decisión que aún no aceptaste (acéptala primero: cambia su línea `Estado: propuesta` por `Estado: aceptada` y haz commit) o que una tarea anterior siga sin cerrarse. La primera vez, crea `~/.metodo-ia.json` con tu terminal y tu carpeta de parches (la línea para hacerlo está en `tools/README.md`); si no existe, el LLM te las preguntará.
 2. **Implementar:** pega el bundle en el LLM que prefieras. Te devuelve **tres bloques**: un parche, un reporte y los comandos.
 3. **Aplicar:** guarda el parche en Descargas y pega el bloque de comandos (explicado abajo). *Para qué:* el bloque prueba el parche, lo aplica, corre los tests y recién entonces guarda y sube.
 4. **Verificar:** los tests corren en tu computador antes del commit; el bloque de comandos ya los incluye y, si fallan, se detiene sin guardar nada. El CI de GitHub es la red de seguridad, no la primera prueba.

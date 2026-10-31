@@ -2,13 +2,13 @@
 
 Herramientas locales del método. Son scripts de Python que usan solo la biblioteca estándar (no hay nada que instalar; funcionan con Python 3.7 o más) y se corren desde la raíz del repo: `python tools/<nombre>.py`. Si `python` no se reconoce en Windows, usa `py`.
 
-**Estado:** `init_diseno.py` e `init_plan.py` están listos. El resto se construye de a una, y cada una se prueba en una app real antes de pasar a la siguiente.
+**Estado:** `init_diseno.py`, `init_plan.py` y `bundle.py` están listos. El resto se construye de a una, y cada una se prueba en una app real antes de pasar a la siguiente.
 
 | Herramienta | Para qué sirve | Orden | Estado |
 |---|---|---|---|
 | `init_diseno.py` | Reparte `DISENO.md` tal cual en `docs/`, guarda el original en `docs/archivo/` y avisa de errores de formato con el número de línea | 1 | listo |
 | `init_plan.py` | Reparte `PLAN.md` (formato en `docs/plantillas/plan.md`): el backlog en `docs/plan/backlog.md`, la matriz de cobertura en `docs/plan/cobertura.md` y las tarjetas de la ola en `docs/plan/tareas/T-xxx.md`. Se corre una vez por ola y no pisa tarjetas existentes | 1 | listo |
-| `bundle.py T-007` | Arma el paquete de contexto de una tarea para pegarlo en un LLM | 2 | pendiente |
+| `bundle.py T-007` | Arma el paquete de contexto de una tarea para pegarlo en un LLM | 2 | listo |
 | `aplicar.py` | Aplica el parche más reciente de tu carpeta de parches, con reintentos y diagnóstico | 3 | pendiente |
 | `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | pendiente |
 | `validar.py` | Revisa que diseño, plan, tarjetas y diagramas sean coherentes entre sí | 5 | pendiente |
@@ -82,11 +82,46 @@ Para probarla sin riesgo con un plan de ejemplo (no escribe nada; si aún no rep
 python tools/init_plan.py tools/tests/fixtures/PLAN-ejemplo.md --check
 ```
 
+## bundle.py
+
+Arma, para una tarea, un solo archivo con lo justo que el LLM necesita: `bundles/T-007.md` (git lo ignora).
+
+```powershell
+python tools/bundle.py T-007                 # arma bundles/T-007.md
+python tools/bundle.py T-007 --forzar        # salta la compuerta de dependencias (bajo tu responsabilidad)
+python tools/bundle.py T-007 --parche2       # modo estricto, parche 2: suma los tests del parche 1
+python tools/bundle.py T-007 --max-kb 80     # cambia el tamaño desde el cual avisa (por defecto, 60)
+```
+
+Trae, en este orden (el que fija `docs/00-LEEME-IA.md`):
+
+| Sección | De dónde sale |
+|---|---|
+| Árbol del repo | Los archivos que existen y git conoce, más los nuevos que no ignora |
+| Entorno del usuario | `~/.metodo-ia.json` (claves `terminal` y `carpeta_parches`); la carpeta del repo es esta. Lo que falte se marca «(sin configurar)» y el LLM lo pregunta una vez: no se inventa nada |
+| Tarjeta | `docs/plan/tareas/T-007.md`, tal cual |
+| Documentos que la tarjeta manda leer | Los de `Leer:`. `docs/00-LEEME-IA.md` va siempre primero, lo pida o no la tarjeta |
+| Archivos de `Tocar:` que ya existen | Su contenido actual. Lo que aún no existe se lista como «por crear» |
+
+- **Sin duplicar.** Un archivo que está en `Leer:` y en `Tocar:` viaja una sola vez. Los textos se normalizan a saltos LF y sin BOM, como los guarda git. Las vallas son de 4 acentos graves, o más si un archivo ya trae vallas largas. Los archivos binarios o que no están en UTF-8 se omiten con aviso. Nunca lee fuera del repo.
+- **Se niega** (no escribe nada, y dice todos los motivos juntos) si: un ADR de `Leer:` no está `aceptada` (`propuesta` o `reemplazada`; **no se puede saltar**, porque pasar un ADR a aceptada es una decisión tuya); una tarea de `Depende de:` no está hecha (`--forzar` lo salta); un archivo de `Leer:` no existe y la tarjeta no dice qué tarea lo produce (`(lo produce T-003)`); o la tarjeta no se puede leer (le falta `Estado:`, `Leer:` o `Tocar:`, o trae algo que no es una ruta).
+- **«Hecha».** Una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`: así se borra al cerrarla (con `git rm`, hasta que exista `cerrar.py`). Si hay un backlog guardado, también comprueba que la dependencia exista en él, y eso ni `--forzar` lo salta. Cuando exista `cerrar.py`, `ESTADO.md` se sumará como fuente.
+- **Modo estricto.** El bundle normal sirve para el parche 1. Para el parche 2 usa `--parche2`: suma los tests del parche 1 (los archivos de `tests/` que `Tocar:` ya tiene) en una sección propia, que vale como `Leer:` y como `No tocar:`. Si no hay ninguno, se niega. Si la tarjeta es estricta, ya hay tests y no usaste `--parche2`, te lo avisa.
+- **Avisos** (arma igual): cambios sin guardar (el bundle refleja tu disco, no el último commit); `bundles/` fuera de `.gitignore`; `~/.metodo-ia.json` ausente o incompleto; campos de la tarjeta sin llenar; el bundle supera el tamaño límite (conviene partir la tarea; los 60 KB son provisionales hasta medirlos con la primera app real).
+- **Resumen.** Imprime qué incluyó, con tamaños y una estimación de tokens (caracteres ÷ 4, aproximada).
+- **Códigos de salida:** 0 armado · 1 se negó · 2 problema de uso o del entorno (no existe la tarjeta, no hay git, no se pudo escribir).
+- **Necesita** git y los archivos `init_plan.py` e `init_diseno.py` junto a él en `tools/`.
+
+Para crear tu `~/.metodo-ia.json` una sola vez (PowerShell; cambia la terminal si usas otra):
+
+```powershell
+@{ terminal = "PowerShell"; carpeta_parches = "$env:USERPROFILE\Downloads" } | ConvertTo-Json | Set-Content -Encoding utf8 "$env:USERPROFILE\.metodo-ia.json"
+```
+
 ## Chequeos acordados para las herramientas que faltan
 
 Salieron de revisar ideas de otros flujos de trabajo con IA y de las decisiones del nivel 2 (caminos, plan por olas, modo estricto y chat de hito), en octubre de 2026. Se prefiere un chequeo aquí antes que una regla más en `00-LEEME-IA.md`: los LLM a veces ignoran las reglas escritas, y un chequeo no.
 
-- **`bundle.py`:** se niega a armar el bundle si una tarea de `Depende de:` no está «hecha» (línea base en verde); `--forzar` lo salta bajo tu responsabilidad. Se suma a la compuerta de ADR no aceptados. En modo estricto, el bundle del parche 2 trae los tests del parche 1 en `Leer:` y en `No tocar:`.
 - **`aplicar.py` y `cerrar.py`:** en el parche 1 del modo estricto se espera que el test falle, y eso no es un error; `cerrar.py --parcial` cierra esa fase. Comprobarán que el rojo no sea un error de importación o de sintaxis (la señal exacta se decide al construir `cerrar.py`; mientras tanto, la persona lee el mensaje).
 - **`cerrar.py`:** avisa de archivos tocados fuera de `Tocar:`, dependencias nuevas, cambios en `contratos/` y decisiones que afectan a otras tareas. «Tests existentes modificados» es un aviso y, con `--reintento` (segundo intento de una tarea), un error. Una tarjeta `REF-NN` que toque un test es siempre un error. Al cerrar una tarea borra su tarjeta de `docs/plan/tareas/` (su historia queda en git y en `docs/plan/reportes/`); hasta que exista, se borra a mano con `git rm`.
 - **`validar.py`:** toda tarjeta tiene la línea `Fuera de alcance:`, y los `Ejemplos aprobados`, si los hay, tienen la forma `entrada → resultado`. Revisa en dos niveles: el **backlog completo** (cobertura criterio → RF → tareas, ciclos, IDs, y que la matriz escrita sea igual a la calculada) y las **tarjetas que existen** (máximo 4 criterios y un solo módulo —si se pasa, el trabajo sube de camino—, y que `Depende de:` y `Cubre:` sean los de su línea del backlog). `Modo:` solo puede valer `estricto`. Las tarjetas `REF-NN` no cubren criterios: quedan fuera del backlog y de la matriz. Al cerrar cada rebanada hace además un **chequeo de estructura** (archivos muy grandes, bloques repetidos): solo lee, y sus umbrales se calibran con la primera app real, no antes.
@@ -94,10 +129,10 @@ Salieron de revisar ideas de otros flujos de trabajo con IA y de las decisiones 
 ## Si vas a construir una herramienta
 
 - Solo biblioteca estándar de Python; debe funcionar en Windows (PowerShell) y en Linux (el CI).
-- Una herramienta puede importar de otra de `tools/` (`init_plan.py` reutiliza el lector de bloques y el formato de salida de `init_diseno.py`). Sus pruebas copian al repo temporal las herramientas de las que dependen.
+- Una herramienta puede importar de otra de `tools/` (`init_plan.py` reutiliza el lector de bloques y el formato de salida de `init_diseno.py`; `bundle.py` lee el backlog guardado con `init_plan.py`). Sus pruebas copian al repo temporal las herramientas de las que dependen.
 - Cada herramienta lleva sus pruebas en `tools/tests/` (con `unittest`, que viene con Python) y el CI las corre: `python -m unittest discover -s tools/tests -v`.
 - `validar.py` debe terminar con código 0 en un repo recién creado desde la plantilla: el CI lo ejecuta apenas el archivo exista.
 - `bundle.py` deja sus archivos en `bundles/`, una carpeta que git ignora (son derivados y pesados).
-- Las preferencias del usuario (terminal y carpeta de parches) viven fuera del repo, en `~/.metodo-ia.json`: `bundle.py` las vuelca en la sección «Entorno del usuario» y `aplicar.py` las usa.
+- Las preferencias del usuario (terminal y carpeta de parches) viven fuera del repo, en `~/.metodo-ia.json` (claves `terminal` y `carpeta_parches`): `bundle.py` las vuelca en la sección «Entorno del usuario» y `aplicar.py` las usa.
 - `cerrar.py` es el único escritor de `docs/plan/ESTADO.md` y del índice de `docs/decisiones/`. `docs/plan/backlog.md` lo escribe el chat de plan o de hito y lo aprueba la persona; `init_plan.py` solo lo reparte.
 - Las plantillas en blanco están en `docs/plantillas/`.
