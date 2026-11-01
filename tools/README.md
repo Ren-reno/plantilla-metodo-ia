@@ -2,7 +2,7 @@
 
 Herramientas locales del método. Son scripts de Python que usan solo la biblioteca estándar (no hay nada que instalar; funcionan con Python 3.7 o más) y se corren desde la raíz del repo: `python tools/<nombre>.py`. Si `python` no se reconoce en Windows, usa `py`.
 
-**Estado:** `init_diseno.py`, `init_plan.py` y `bundle.py` están listos. El resto se construye de a una, y cada una se prueba en una app real antes de pasar a la siguiente.
+**Estado:** `init_diseno.py`, `init_plan.py`, `bundle.py` y `cerrar.py` están listos. El resto se construye de a una, y cada una se prueba en una app real antes de pasar a la siguiente.
 
 | Herramienta | Para qué sirve | Orden | Estado |
 |---|---|---|---|
@@ -10,7 +10,7 @@ Herramientas locales del método. Son scripts de Python que usan solo la bibliot
 | `init_plan.py` | Reparte `PLAN.md` (formato en `docs/plantillas/plan.md`): el backlog en `docs/plan/backlog.md`, la matriz de cobertura en `docs/plan/cobertura.md` y las tarjetas de la ola en `docs/plan/tareas/T-xxx.md`. Se corre una vez por ola y no pisa tarjetas existentes | 1 | listo |
 | `bundle.py T-007` | Arma el paquete de contexto de una tarea para pegarlo en un LLM | 2 | listo |
 | `aplicar.py` | Aplica el parche más reciente de tu carpeta de parches, con reintentos y diagnóstico | 3 | pendiente |
-| `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | pendiente |
+| `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | listo |
 | `validar.py` | Revisa que diseño, plan, tarjetas y diagramas sean coherentes entre sí | 5 | pendiente |
 
 ## init_diseno.py
@@ -105,7 +105,7 @@ Trae, en este orden (el que fija `docs/00-LEEME-IA.md`):
 
 - **Sin duplicar.** Un archivo que está en `Leer:` y en `Tocar:` viaja una sola vez. Los textos se normalizan a saltos LF y sin BOM, como los guarda git. Las vallas son de 4 acentos graves, o más si un archivo ya trae vallas largas. Los archivos binarios o que no están en UTF-8 se omiten con aviso. Nunca lee fuera del repo.
 - **Se niega** (no escribe nada, y dice todos los motivos juntos) si: un ADR de `Leer:` no está `aceptada` (`propuesta` o `reemplazada`; **no se puede saltar**, porque pasar un ADR a aceptada es una decisión tuya); una tarea de `Depende de:` no está hecha (`--forzar` lo salta); un archivo de `Leer:` no existe y la tarjeta no dice qué tarea lo produce (`(lo produce T-003)`); o la tarjeta no se puede leer (le falta `Estado:`, `Leer:` o `Tocar:`, o trae algo que no es una ruta).
-- **«Hecha».** Una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`: así se borra al cerrarla (con `git rm`, hasta que exista `cerrar.py`). Si hay un backlog guardado, también comprueba que la dependencia exista en él, y eso ni `--forzar` lo salta. Cuando exista `cerrar.py`, `ESTADO.md` se sumará como fuente.
+- **«Hecha».** Una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`: así la deja `cerrar.py --hecha`. Si hay un backlog guardado, también comprueba que la dependencia exista en él, y eso ni `--forzar` lo salta. `ESTADO.md` no hace falta como fuente: como `cerrar.py --hecha` borra la tarjeta, las dos cosas siempre coinciden.
 - **Modo estricto.** El bundle normal sirve para el parche 1. Para el parche 2 usa `--parche2`: suma los tests del parche 1 (los archivos de `tests/` que `Tocar:` ya tiene) en una sección propia, que vale como `Leer:` y como `No tocar:`. Si no hay ninguno, se niega. Si la tarjeta es estricta, ya hay tests y no usaste `--parche2`, te lo avisa.
 - **Avisos** (arma igual): cambios sin guardar (el bundle refleja tu disco, no el último commit); `bundles/` fuera de `.gitignore`; `~/.metodo-ia.json` ausente o incompleto; campos de la tarjeta sin llenar; el bundle supera el tamaño límite (conviene partir la tarea; los 60 KB son provisionales hasta medirlos con la primera app real).
 - **Resumen.** Imprime qué incluyó, con tamaños y una estimación de tokens (caracteres ÷ 4, aproximada).
@@ -118,18 +118,47 @@ Para crear tu `~/.metodo-ia.json` una sola vez (PowerShell; cambia la terminal s
 @{ terminal = "PowerShell"; carpeta_parches = "$env:USERPROFILE\Downloads" } | ConvertTo-Json | Set-Content -Encoding utf8 "$env:USERPROFILE\.metodo-ia.json"
 ```
 
+## cerrar.py
+
+Cierra una tarea en dos momentos, como la recepción provisoria y la definitiva de una obra: revisa el reporte, anota lo raro y mantiene `docs/plan/ESTADO.md`.
+
+```powershell
+python tools/cerrar.py T-007 reporte.md              # provisoria: revisa el reporte y deja la tarea «en revisión»
+python tools/cerrar.py T-007 reporte.md --parcial    # parche 1 del modo estricto: queda «parcial»
+python tools/cerrar.py T-007 reporte.md --reintento  # segundo intento tras un fallo
+python tools/cerrar.py T-007 --hecha                 # definitiva (el CI salió en verde): «hecha» y se borra la tarjeta
+```
+
+Opciones de datos y ensayo: `--desde REF` (commit desde el que mirar lo que cambió la tarea; por defecto `HEAD~1`, el último commit, porque el bloque de comandos del LLM ya hizo el commit), `--llm NOMBRE` (qué LLM la hizo; se anota en `ESTADO.md`) y `--check` (ensayo: no escribe ni borra nada).
+
+| Momento | Cuándo | Qué hace |
+|---|---|---|
+| `cerrar.py T-007 reporte.md` | Después del bloque de comandos (el commit ya está hecho) | Valida el reporte, mira qué archivos cambió el commit, levanta banderas, guarda el reporte en `docs/plan/reportes/T-007.md`, deja la tarea «en revisión», propone ADR y regenera el índice de decisiones |
+| `cerrar.py T-007 --hecha` | Cuando el CI de GitHub salió en verde | La deja «hecha», borra su tarjeta y lista las tareas que quedan desbloqueadas |
+
+- **Errores** (impiden cerrar; no se escribe nada): el reporte no tiene exactamente las seis secciones (falta alguna, tiene otro título, va fuera de orden, está repetida o vacía) o es de otra tarea; la tarea no está en el backlog (y no es `REF-NN`); la tarjeta tiene errores; `--parcial` en una tarjeta que no es de modo estricto; cerrar una tarea ya «hecha», o ya «en revisión» sin `--reintento`; `--hecha` sobre una tarea que no está «en revisión»; una tarjeta `REF-NN` que toca un test; con `--reintento`, un test que ya existía modificado; un reporte archivado que ya existe (sin `--reintento`).
+- **Banderas** (para revisar; no frenan, y quedan en la columna *Notas* de `ESTADO.md`): archivos fuera de `Tocar:`; un documento «solo la sección X» cambiado fuera de esa sección (solo se comprueba en Markdown); un archivo de dependencias tocado (`requirements.txt`, `pyproject.toml`, `package.json`…), con una pista si «Decisiones tomadas» no dice nada; cambios en `docs/contratos/`; decisiones que afectan a otras tareas.
+- **Avisos:** «Cómo probar» sin «Verificado:» o sin «No verificado:»; el mensaje de commit sugerido no es convencional; campos de la plantilla sin llenar; tests que ya existían modificados (con `--reintento` es un error); notas de `Tocar:` que no sabe comprobar, como `solo INSTALLED_APPS` («revisa a mano»); no hay cambios entre `--desde` y HEAD; cambios sin guardar (solo mira commits; el propio reporte en la raíz no cuenta).
+- **Estados.** `pendiente` (todo el backlog empieza así), `parcial` (parche 1 del modo estricto; la tarjeta se queda), `en revisión` (reporte revisado; falta el CI) y `hecha` (la tarjeta se borra). `en curso` y `bloqueada` existen en la tabla, pero ningún paso del flujo los escribe todavía.
+- **`ESTADO.md`.** Una tabla (tarea · estado · LLM · commit · notas) que solo escribe `cerrar.py`: no se edita a mano. Trae el avance («3 de 12 tareas hechas») y no pierde las filas de las tareas que ya no están en el backlog ni las de refactor (`REF-NN`).
+- **Decisiones.** Cada decisión del reporte que termina en «Afecta a otras tareas» se convierte en `docs/decisiones/NNNN-slug.md` con `Estado: propuesta` (el siguiente número libre). `bundle.py` se niega a usarla hasta que la aceptes. El índice `docs/decisiones/README.md` (ADR · título · estado) se regenera completo en cada ejecución a partir de los propios ADR: nadie lo edita.
+- **Rojo del modo estricto.** No se detecta automáticamente (los errores de importación se ven distinto en cada lenguaje): `--parcial` imprime qué rojo es el correcto y cuál no, y tú lees el mensaje del test. Se automatizará tras la primera tarea estricta real.
+- **Nunca modifica git.** Solo lo lee (con una lista blanca de comandos de lectura, probada). Todo lo que escribe queda sin commit para que lo revises con `git diff`. La tarjeta se borra con un borrado normal de archivo, no con `git rm`: tú la guardas en el commit de cierre, junto con `ESTADO.md`.
+- **Codificación.** Lee y escribe todo en UTF-8: el reporte puede traer BOM o saltos de línea de Windows, y lo que escribe va sin BOM y con saltos LF. Una prueba revisa el código de las cuatro herramientas y falla si algún `open`, `read_text` o `write_text` no declara su `encoding` (o si una escritura no fija el salto de línea), porque en Windows el valor predeterminado (cp1252) fallaría con «·» y con «».
+- **Códigos de salida:** 0 hecho · 1 el reporte tiene errores o el estado de la tarea no lo permite · 2 problema de uso o del entorno (no existe la tarjeta, no hay git, no se pudo escribir).
+- **Necesita** git y los archivos `bundle.py`, `init_plan.py` e `init_diseno.py` junto a él en `tools/`.
+
 ## Chequeos acordados para las herramientas que faltan
 
 Salieron de revisar ideas de otros flujos de trabajo con IA y de las decisiones del nivel 2 (caminos, plan por olas, modo estricto y chat de hito), en octubre de 2026. Se prefiere un chequeo aquí antes que una regla más en `00-LEEME-IA.md`: los LLM a veces ignoran las reglas escritas, y un chequeo no.
 
-- **`aplicar.py` y `cerrar.py`:** en el parche 1 del modo estricto se espera que el test falle, y eso no es un error; `cerrar.py --parcial` cierra esa fase. Comprobarán que el rojo no sea un error de importación o de sintaxis (la señal exacta se decide al construir `cerrar.py`; mientras tanto, la persona lee el mensaje).
-- **`cerrar.py`:** avisa de archivos tocados fuera de `Tocar:`, dependencias nuevas, cambios en `contratos/` y decisiones que afectan a otras tareas. «Tests existentes modificados» es un aviso y, con `--reintento` (segundo intento de una tarea), un error. Una tarjeta `REF-NN` que toque un test es siempre un error. Al cerrar una tarea borra su tarjeta de `docs/plan/tareas/` (su historia queda en git y en `docs/plan/reportes/`); hasta que exista, se borra a mano con `git rm`.
+- **`aplicar.py`:** en el parche 1 del modo estricto se espera que el test falle, y eso no es un error. Comprobará que el rojo no sea un error de importación o de sintaxis (la señal exacta se decide al construirlo; mientras tanto, `cerrar.py --parcial` imprime qué rojo es el correcto y la persona lee el mensaje).
 - **`validar.py`:** toda tarjeta tiene la línea `Fuera de alcance:`, y los `Ejemplos aprobados`, si los hay, tienen la forma `entrada → resultado`. Revisa en dos niveles: el **backlog completo** (cobertura criterio → RF → tareas, ciclos, IDs, y que la matriz escrita sea igual a la calculada) y las **tarjetas que existen** (máximo 4 criterios y un solo módulo —si se pasa, el trabajo sube de camino—, y que `Depende de:` y `Cubre:` sean los de su línea del backlog). `Modo:` solo puede valer `estricto`. Las tarjetas `REF-NN` no cubren criterios: quedan fuera del backlog y de la matriz. Al cerrar cada rebanada hace además un **chequeo de estructura** (archivos muy grandes, bloques repetidos): solo lee, y sus umbrales se calibran con la primera app real, no antes.
 
 ## Si vas a construir una herramienta
 
 - Solo biblioteca estándar de Python; debe funcionar en Windows (PowerShell) y en Linux (el CI).
-- Una herramienta puede importar de otra de `tools/` (`init_plan.py` reutiliza el lector de bloques y el formato de salida de `init_diseno.py`; `bundle.py` lee el backlog guardado con `init_plan.py`). Sus pruebas copian al repo temporal las herramientas de las que dependen.
+- Una herramienta puede importar de otra de `tools/` (`init_plan.py` reutiliza el lector de bloques y el formato de salida de `init_diseno.py`; `bundle.py` lee el backlog guardado con `init_plan.py`; `cerrar.py` reutiliza la lectura de tarjetas y el acceso a git de `bundle.py`). Sus pruebas copian al repo temporal las herramientas de las que dependen.
 - Cada herramienta lleva sus pruebas en `tools/tests/` (con `unittest`, que viene con Python) y el CI las corre: `python -m unittest discover -s tools/tests -v`.
 - `validar.py` debe terminar con código 0 en un repo recién creado desde la plantilla: el CI lo ejecuta apenas el archivo exista.
 - `bundle.py` deja sus archivos en `bundles/`, una carpeta que git ignora (son derivados y pesados).

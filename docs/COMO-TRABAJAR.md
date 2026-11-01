@@ -36,7 +36,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 ## Qué funciona hoy y qué falta
 
-Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py`, `init_plan.py` y `bundle.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
+Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py`, `init_plan.py`, `bundle.py` y `cerrar.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
 
 ## Empezar una app nueva
 
@@ -129,14 +129,14 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 ## El ciclo de cada tarea (etapa 4)
 
-**Antes de cada tarea, línea base en verde.** Confirma que la tarea anterior está terminada: los tests pasan en tu computador y el CI del último commit está en verde. *Para qué:* si empiezas sobre algo que ya está roto, nadie sabrá si un fallo nuevo es del LLM o heredado, y los errores se acumulan. `bundle.py` se niega a armar el bundle si una tarea de `Depende de:` no está «hecha» (una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`; `--forzar` salta esta compuerta, bajo tu responsabilidad).
+**Antes de cada tarea, línea base en verde.** Confirma que la tarea anterior está terminada: los tests pasan en tu computador y el CI del último commit está en verde. *Para qué:* si empiezas sobre algo que ya está roto, nadie sabrá si un fallo nuevo es del LLM o heredado, y los errores se acumulan. `bundle.py` se niega a armar el bundle si una tarea de `Depende de:` no está «hecha» (una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`: la borra `cerrar.py --hecha`; `--forzar` salta esta compuerta, bajo tu responsabilidad).
 
 1. **Preparar:** `python tools/bundle.py T-007`. *Para qué:* arma un solo archivo, `bundles/T-007.md`, con lo justo que el LLM necesita; así gasta pocos tokens y no se confunde. Ábrelo, copia todo su contenido y pégalo en el LLM. Si se niega a armarlo, te dice por qué (todos los motivos juntos). Lo más común es que la tarea cite una decisión que aún no aceptaste (acéptala primero: cambia su línea `Estado: propuesta` por `Estado: aceptada` y haz commit) o que una tarea anterior siga sin cerrarse. La primera vez, crea `~/.metodo-ia.json` con tu terminal y tu carpeta de parches (la línea para hacerlo está en `tools/README.md`); si no existe, el LLM te las preguntará.
 2. **Implementar:** pega el bundle en el LLM que prefieras. Te devuelve **tres bloques**: un parche, un reporte y los comandos.
 3. **Aplicar:** guarda el parche en Descargas y pega el bloque de comandos (explicado abajo). *Para qué:* el bloque prueba el parche, lo aplica, corre los tests y recién entonces guarda y sube.
 4. **Verificar:** los tests corren en tu computador antes del commit; el bloque de comandos ya los incluye y, si fallan, se detiene sin guardar nada. El CI de GitHub es la red de seguridad, no la primera prueba.
-5. **Cerrar:** `python tools/cerrar.py T-007 reporte.md` *(pendiente)*. *Para qué:* registra el reporte, actualiza `ESTADO.md`, convierte las decisiones nuevas en propuestas y te avisa de cosas raras (dependencias nuevas, tests antiguos modificados, cambios en contratos). La tarea queda «en revisión» hasta que pase en tu computador y en el CI.
-6. **Decidir:** aceptas o rechazas las decisiones que el LLM propuso, haces commit y sigues. Cuando una tarea queda «hecha», su tarjeta se borra de `docs/plan/tareas/` (`cerrar.py` lo hará; mientras no exista, hazlo tú con `git rm` y un commit): su historia queda en git y en los reportes.
+5. **Cerrar (recepción provisoria):** `python tools/cerrar.py T-007 reporte.md --llm Claude`. *Para qué:* es el inspector que recibe la obra. Revisa que el reporte esté completo, mira qué archivos cambió el commit (el bloque de comandos ya lo hizo) y te avisa de lo raro: archivos fuera de `Tocar:`, dependencias nuevas, tests antiguos modificados, cambios en contratos. Guarda el reporte en `docs/plan/reportes/` (si estaba en la raíz del repo, lo mueve; si estaba en otra carpeta, lo copia), actualiza `ESTADO.md` y convierte las decisiones que afectan a otras tareas en propuestas de ADR. La tarea queda «en revisión». Si el reporte tiene errores, te dice cuáles y no escribe nada; con `--check` solo ensaya. Si es un segundo intento (por ejemplo, el CI falló y lo corregiste), agrega `--reintento`.
+6. **Decidir y cerrar del todo (recepción definitiva):** revisa con `git diff` y acepta o rechaza las propuestas de ADR (para aceptar una, cambia su línea `Estado: propuesta` por `Estado: aceptada`). Cuando el CI de GitHub salga en verde, corre `python tools/cerrar.py T-007 --hecha`. *Para qué:* «hecha» significa línea base en verde, y eso solo lo sabes tú al mirar el CI. El comando deja la tarea «hecha», borra su tarjeta de `docs/plan/tareas/` con un borrado normal (sin `git rm`) y te dice qué tareas quedaron desbloqueadas. Después haces **un** commit con todo el cierre (`ESTADO.md`, el reporte, las decisiones y la tarjeta borrada): su historia queda en git y en los reportes.
 
 Si la tarjeta dice `Modo: estricto`, la tarea son dos parches: mira «Modo estricto» más abajo.
 
@@ -220,6 +220,8 @@ git add -A
 git commit -m "test: registrar actividad (rojo)"
 if ($LASTEXITCODE -eq 0) { git push }
 ```
+
+Después del commit, ciérrala con `python tools/cerrar.py T-007 reporte.md --parcial`: queda «parcial» y su tarjeta se queda, porque aún falta el parche 2. *Para qué:* deja constancia de que el parche 1 está hecho y te recuerda qué rojo es el correcto. Luego arma el bundle del parche 2 con `python tools/bundle.py T-007 --parche2` y, al terminar, cierra con `cerrar.py T-007 reporte.md` (sin `--parcial`).
 
 ## Al cerrar cada rebanada: prueba de uso y chat de hito
 

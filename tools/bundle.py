@@ -347,8 +347,9 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
                           + ", ".join(pendientes))
     else:
         for d in pendientes:
-            res.negativas.append(f"{d} no está hecha: su tarjeta docs/plan/tareas/{d}.md todavía existe. Termínala "
-                                 f"y bórrala (git rm) antes de seguir. --forzar salta esta compuerta, bajo tu responsabilidad")
+            res.negativas.append(f"{d} no está hecha: su tarjeta docs/plan/tareas/{d}.md todavía existe. Termínala y "
+                                 f"ciérrala con «python tools/cerrar.py {d} --hecha» (borra su tarjeta) antes de seguir. "
+                                 "--forzar salta esta compuerta, bajo tu responsabilidad")
 
     # --- documentos de «Leer:» (las reglas siempre primero)
     items = [Item(REL_LEEME, "", "", None)] + [i for i in t.leer if i.ruta != REL_LEEME]
