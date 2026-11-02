@@ -2,7 +2,7 @@
 
 Herramientas locales del método. Son scripts de Python que usan solo la biblioteca estándar (no hay nada que instalar; funcionan con Python 3.7 o más) y se corren desde la raíz del repo: `python tools/<nombre>.py`. Si `python` no se reconoce en Windows, usa `py`.
 
-**Estado:** `init_diseno.py`, `init_plan.py`, `bundle.py` y `cerrar.py` están listos. El resto se construye de a una, y cada una se prueba en una app real antes de pasar a la siguiente.
+**Estado:** `init_diseno.py`, `init_plan.py`, `bundle.py`, `cerrar.py` y `validar.py` están listos. Solo `aplicar.py` queda pendiente.
 
 | Herramienta | Para qué sirve | Orden | Estado |
 |---|---|---|---|
@@ -11,7 +11,7 @@ Herramientas locales del método. Son scripts de Python que usan solo la bibliot
 | `bundle.py T-007` | Arma el paquete de contexto de una tarea para pegarlo en un LLM | 2 | listo |
 | `aplicar.py` | Aplica el parche más reciente de tu carpeta de parches, con reintentos y diagnóstico | 3 | pendiente |
 | `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | listo |
-| `validar.py` | Revisa que diseño, plan, tarjetas y diagramas sean coherentes entre sí | 5 | pendiente |
+| `validar.py` | Revisa que diseño, plan, cobertura, tarjetas y código sean coherentes entre sí | 5 | listo |
 
 ## init_diseno.py
 
@@ -144,16 +144,39 @@ Opciones de datos y ensayo: `--desde REF` (commit desde el que mirar lo que camb
 - **Decisiones.** Cada decisión del reporte que termina en «Afecta a otras tareas» se convierte en `docs/decisiones/NNNN-slug.md` con `Estado: propuesta` (el siguiente número libre). `bundle.py` se niega a usarla hasta que la aceptes. El índice `docs/decisiones/README.md` (ADR · título · estado) se regenera completo en cada ejecución a partir de los propios ADR: nadie lo edita.
 - **Rojo del modo estricto.** No se detecta automáticamente (los errores de importación se ven distinto en cada lenguaje): `--parcial` imprime qué rojo es el correcto y cuál no, y tú lees el mensaje del test. Se automatizará tras la primera tarea estricta real.
 - **Nunca modifica git.** Solo lo lee (con una lista blanca de comandos de lectura, probada). Todo lo que escribe queda sin commit para que lo revises con `git diff`. La tarjeta se borra con un borrado normal de archivo, no con `git rm`: tú la guardas en el commit de cierre, junto con `ESTADO.md`.
-- **Codificación.** Lee y escribe todo en UTF-8: el reporte puede traer BOM o saltos de línea de Windows, y lo que escribe va sin BOM y con saltos LF. Una prueba revisa el código de las cuatro herramientas y falla si algún `open`, `read_text` o `write_text` no declara su `encoding` (o si una escritura no fija el salto de línea), porque en Windows el valor predeterminado (cp1252) fallaría con «·» y con «».
+- **Codificación.** Lee y escribe todo en UTF-8: el reporte puede traer BOM o saltos de línea de Windows, y lo que escribe va sin BOM y con saltos LF. Una prueba revisa el código de las cinco herramientas y falla si algún `open`, `read_text` o `write_text` no declara su `encoding` (o si una escritura no fija el salto de línea), porque en Windows el valor predeterminado (cp1252) fallaría con «·» y con «».
 - **Códigos de salida:** 0 hecho · 1 el reporte tiene errores o el estado de la tarea no lo permite · 2 problema de uso o del entorno (no existe la tarjeta, no hay git, no se pudo escribir).
 - **Necesita** git y los archivos `bundle.py`, `init_plan.py` e `init_diseno.py` junto a él en `tools/`.
+
+## validar.py
+
+Revisa que diseño, plan, cobertura, tarjetas y código sean coherentes entre sí. Es el sensor integral del arnés que hereda las validaciones de fondo que `init_plan.py` no revisa.
+
+```powershell
+python tools/validar.py            # revisa coherencia del repo actual
+python tools/validar.py --estricto # trata avisos como errores
+python tools/validar.py --repo DIR # revisa otro repositorio
+```
+
+Comprueba:
+1. **Grafo de dependencias y ciclos en el backlog:** detecta tareas que dependen de sí mismas, de tareas inexistentes, de rebanadas posteriores o ciclos cerrados (A -> B -> A).
+2. **Cobertura de requisitos y criterios:** ningún `RF-xxx` en `docs/requisitos/` queda huérfano (todos cubiertos por al menos una tarea en el backlog) y todo criterio de éxito de `contexto.md` está cubierto.
+3. **Matriz de cobertura (`docs/plan/cobertura.md`):** verifica que la tabla escrita coincida con lo declarado en el backlog (sin tareas inexistentes, sin omisiones y respetando los criterios a los que cada RF aporta).
+4. **Tarjetas de `docs/plan/tareas/`:**
+   - **Máximo 4 criterios de aceptación (D16):** cada tarjeta debe tener entre 1 y 4 criterios; si pasa de 4, el arnés exige partirla o subir de camino.
+   - **`Fuera de alcance:` obligatorio (D16):** delimita explícitamente lo que no se construye para cortar código innecesario.
+   - **Coherencia con el backlog:** `Depende de:` y `Cubre:` de la tarjeta deben ser idénticos a los de su línea del backlog.
+   - **Tarjetas de refactor (`REF-NN`, D37):** solo tocan código (`src/*` o `app/*`), nunca tests ni documentación.
+   - **Archivos citados en `Leer:`:** comprueba que existan o indiquen `(lo produce T-xxx)`; avisa si un ADR citado está en estado «propuesta» (bloqueará `bundle.py`).
+5. **Estructura y alertas de refactor (D37):** avisa si hay archivos de código muy grandes (>500 líneas) como candidatos a evaluar en el chat de hito.
+
+- **Códigos de salida:** 0 todo bien · 1 errores de coherencia (o avisos con `--estricto`) · 2 problema de uso o entorno (falta `docs/` o `backlog.md`).
 
 ## Chequeos acordados para las herramientas que faltan
 
 Salieron de revisar ideas de otros flujos de trabajo con IA y de las decisiones del nivel 2 (caminos, plan por olas, modo estricto y chat de hito), en octubre de 2026. Se prefiere un chequeo aquí antes que una regla más en `00-LEEME-IA.md`: los LLM a veces ignoran las reglas escritas, y un chequeo no.
 
 - **`aplicar.py`:** en el parche 1 del modo estricto se espera que el test falle, y eso no es un error. Comprobará que el rojo no sea un error de importación o de sintaxis (la señal exacta se decide al construirlo; mientras tanto, `cerrar.py --parcial` imprime qué rojo es el correcto y la persona lee el mensaje).
-- **`validar.py`:** toda tarjeta tiene la línea `Fuera de alcance:`, y los `Ejemplos aprobados`, si los hay, tienen la forma `entrada → resultado`. Revisa en dos niveles: el **backlog completo** (cobertura criterio → RF → tareas, ciclos, IDs, y que la matriz escrita sea igual a la calculada) y las **tarjetas que existen** (máximo 4 criterios y un solo módulo —si se pasa, el trabajo sube de camino—, y que `Depende de:` y `Cubre:` sean los de su línea del backlog). `Modo:` solo puede valer `estricto`. Las tarjetas `REF-NN` no cubren criterios: quedan fuera del backlog y de la matriz. Al cerrar cada rebanada hace además un **chequeo de estructura** (archivos muy grandes, bloques repetidos): solo lee, y sus umbrales se calibran con la primera app real, no antes.
 
 ## Si vas a construir una herramienta
 

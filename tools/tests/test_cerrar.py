@@ -119,7 +119,7 @@ class RepoCli(Repo):
     def __init__(self, test, con_mundo=True):
         super().__init__(test, con_mundo=False)
         (self.dir / "tools").mkdir()
-        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py"):
+        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py"):
             shutil.copy(TOOLS / nombre, self.dir / "tools" / nombre)
         self.home = Path(tempfile.mkdtemp())
         test.addCleanup(shutil.rmtree, self.home, True)
@@ -846,7 +846,7 @@ class Escritura(unittest.TestCase):
 
     def test_toda_lectura_y_escritura_de_texto_declara_su_codificacion(self):
         # En Windows el predeterminado es cp1252 y falla con «·» y «»: nada debe depender de él.
-        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py"):
+        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py"):
             arbol = ast.parse((TOOLS / nombre).read_text(encoding="utf-8"))
             for nodo in ast.walk(arbol):
                 if not isinstance(nodo, ast.Call):
