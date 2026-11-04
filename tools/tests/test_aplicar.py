@@ -912,6 +912,35 @@ class PruebaCadena(PruebaConGit):
 
 
 # ---- el diagnóstico -------------------------------------------------------------------------------------------
+class PruebaDiagnosticoCorrupto(unittest.TestCase):
+    """El diagnóstico conserva contexto con las salidas de distintas versiones de git."""
+
+    def comprobar_contexto(self, mensaje):
+        reverso = subprocess.CompletedProcess([], 1, stdout="", stderr=mensaje)
+        with mock.patch.object(ap, "_git", return_value=reverso) as git, \
+                mock.patch.object(ap, "archivos_del_parche", side_effect=AssertionError(
+                    "un parche corrupto reconocido no necesita diagnosticar rechazos")):
+            lineas, pedir_correccion = ap.diagnosticar(
+                Path("."), PARCHE_ROTO, "roto.patch", [("simple", 1, mensaje)])
+        salida = "\n".join(lineas)
+        self.assertTrue(pedir_correccion)
+        self.assertIn("dañado cerca de la línea 4", salida)
+        self.assertRegex(salida, r">\s+4 \| @@ -1,3 \+1,3(?:\n|$)")
+        self.assertIn("   3 | +++ b/a.txt", salida)
+        self.assertIn("   5 |  uno", salida)
+        git.assert_called_once()  # solo el ensayo de reverso; no aplicar ni crear copias
+
+    def test_formato_con_linea_sin_ruta(self):
+        self.comprobar_contexto("error: corrupt patch at line 4\n")
+
+    def test_formato_con_ruta_temporal_del_ci(self):
+        self.comprobar_contexto("error: corrupt patch at /tmp/aplicar-jr8oex4s.patch:4\n")
+
+    def test_formato_con_ruta_windows_espacios_y_dos_puntos(self):
+        self.comprobar_contexto("aviso previo\r\nerror: corrupt patch at "
+                               r"C:\Temp\carpeta con espacios\parche:12.patch:4" + "\r\n")
+
+
 class PruebaDiagnostico(PruebaConGit):
     LARGO = "".join("linea %d\n" % i for i in range(1, 13))
     PARCHE_LARGO = ("diff --git a/largo.txt b/largo.txt\n--- a/largo.txt\n+++ b/largo.txt\n@@ -4,7 +4,7 @@\n"
