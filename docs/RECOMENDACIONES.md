@@ -1,3 +1,5 @@
+> **Documento histórico basado en la memoria v4.** Sus prioridades y estados no describen la implementación actual. Las seis herramientas ya existen; consulta `COMO-TRABAJAR.md` y `../tools/README.md` para el flujo vigente.
+
 # Recomendaciones Técnicas y Estratégicas para `plantilla-metodo-ia`
 
 > **Diagnóstico general:** El sistema diseñado en la **Memoria v4** es conceptualmente sólido, tiene fundamentos teóricos de primer nivel (*Harness Engineering*, *Spec-Driven Development* adaptado, rebanadas verticales de Kent Beck y Birgitta Böckeler) y resuelve de manera brillante el ahorro de tokens en planes gratuitos.

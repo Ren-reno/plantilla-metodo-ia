@@ -7,7 +7,7 @@
 
 ## Hecho
 
-«Qué se implementó, en pocas líneas.»
+«Qué se implementó, en pocas líneas. En una corrección: qué fallaba, qué debía pasar, causa encontrada (o desconocida) y solución.»
 
 ## Supuestos
 
@@ -25,11 +25,11 @@
 
 ## Cómo probar
 
-«Comando(s) y resultado esperado.»
+«Comando(s), pasos y resultado esperado. Para UI: versión, pantallas/estados/tamaños revisados, referencias o capturas reales y quién comprobó el resultado. Para bugs: reproducción y evidencia de antes/después. Mantener estas seis secciones.»
 
 - Verificado: «lo que comprobaste de verdad, y cómo»
 - No verificado: «lo que no pudiste comprobar, por ejemplo el CI de GitHub»
 
 ## Mensaje de commit sugerido
 
-`«tipo: descripción corta en español»`
+`«tipo: T-NNN descripción corta en español»`

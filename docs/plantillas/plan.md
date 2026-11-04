@@ -5,6 +5,13 @@
 
   - Ola = rebanada. El backlog trae TODAS las tareas, una línea cada una; solo la ola actual trae tarjetas completas,
     escritas con el código real a la vista. Las demás tareas viven solo como línea hasta que les llega el turno.
+  - Fuente: versión y alcance de diseño confirmados, catálogo de actores, experiencia si aplica e inventario de diagramas.
+    La revisión humana comprueba esta condición; los scripts no certifican aprobación visual o calidad del diseño.
+  - Una rebanada con UI termina con recorrido integrado y prueba de uso. Sus tarjetas pueden separar capas técnicas.
+    El layout compartido se prepara antes de las pantallas: en T-001 si cabe o en una tarjeta fundacional dependiente.
+    Los cambios compartidos bloqueantes requieren replanificar dependencias; no posponerlos automáticamente al hito.
+  - Cada criterio indica evidencia. Referencias visuales reales se adjuntan además del bundle; no inventar Modo: UI.
+    ACT/ROL son referencias de lectura; Cubre conserva solo identificadores soportados.
   - Rebanadas: ordenadas por peso, riesgo y dependencias; cada una deja algo ejecutable. El hito mínimo (el flujo
     ejecutable más corto de punta a punta) lo dice el título de la rebanada que lo completa.
   - Línea del backlog: `- T-001 · Título · Depende de: T-00x, … (o —) · Cubre: C2 (30), RF-004`. El separador es ` · `:
@@ -20,7 +27,7 @@
     secciones, versión +1 y la línea `Motivo del cambio:`.
 -->
 # PLAN — «nombre de la app»
-> Versión «1» · «fecha» · fuente: «DISENO.md, versión»
+> Versión «1» · «fecha» · fuente: «versión y alcance confirmados del diseño; experiencia e inventario si aplican»
 > Motivo del cambio: «solo desde la versión 2: qué cambió en el backlog y por qué»
 
 ## Backlog

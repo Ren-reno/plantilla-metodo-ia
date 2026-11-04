@@ -12,8 +12,8 @@ Este repo es el **cuaderno de obra**: todo queda escrito aquí. Por eso puedes c
 
 | Etapa | Qué haces tú | Qué queda en el repo |
 |---|---|---|
-| 1. Diseño | Conversas con un LLM hasta cerrar `DISENO.md` | `DISENO.md`, repartido luego en `docs/` |
-| 2. Diagramas | Pides diagramas a partir del diseño | `docs/diagramas/` |
+| 1. Diseño | Iteras problema, recorrido, apariencia y viabilidad con [DISENAR.md](DISENAR.md) | Diseño, experiencia si aplica y referencias vigentes |
+| 2. Diagramas | Eliges un inventario y revisas los diagramas necesarios para el alcance | `docs/diagramas/`, incluido su índice |
 | 3. Plan | Pides el plan por olas: la lista completa de tareas y tarjetas solo para la próxima ola | `docs/plan/backlog.md`, `docs/plan/cobertura.md` y `docs/plan/tareas/` |
 | 4. Código | Repites el ciclo de abajo, una tarea a la vez | Un parche por tarea y `docs/plan/ESTADO.md` |
 
@@ -27,31 +27,38 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 |---|---|---|
 | **Completo** (construir una casa) | App o módulo nuevo, o entidades y relaciones nuevas | Las 4 etapas |
 | **Cambio** (remodelar una pieza) | Una funcionalidad nueva en una app que ya existe; un campo nuevo en una entidad cuenta como cambio | Un mini-diseño de una página (`docs/plantillas/cambio.md`; se guarda en `docs/cambios/`) y de 1 a 3 tarjetas |
-| **Rápido** (arreglar una gotera) | Un bug o un ajuste | Una tarjeta rápida (variante en `docs/plantillas/tarjeta.md`); un bug parte con el test que lo reproduce |
+| **Rápido** (arreglar una gotera) | Un bug o un ajuste | Una tarjeta rápida (variante en `docs/plantillas/tarjeta.md`); un bug parte con su reproducción y evidencia; test primero cuando es automatizable |
 
-- **Regla de subida:** si una tarjeta de un camino liviano necesita más de 4 criterios o más de un módulo, el trabajo no era liviano: sube al camino siguiente. *Para qué:* un camino corto no debe servir para saltarse el rigor. Aunque el camino sea corto, cada tarea lleva su tarjeta, su test y su reporte.
-- **Los documentos se mantienen vivos.** Si una tarea cambia el comportamiento, su parche actualiza también el RF o la sección de `docs/modelo.md` que corresponda (y el `.puml` si cambia el modelo), y esos archivos van en el `Tocar:` de la tarjeta. La versión vigente es la de `docs/requisitos/` y `docs/modelo.md`; el `DISENO.md` original queda en `docs/archivo/` como foto histórica. *Para qué:* si nadie los actualiza, el mapa de lo que hace la app termina mintiendo.
+- **Regla de subida:** si una tarjeta de un camino liviano necesita más de 4 criterios o más de un módulo, el trabajo no era liviano: sube al camino siguiente. *Para qué:* un camino corto no debe servir para saltarse el rigor. Aunque el camino sea corto, cada tarea lleva su tarjeta, evidencia de aceptación y reporte; lo automatizable mantiene sus tests.
+- **Los documentos se mantienen vivos.** Si una tarea cambia el comportamiento, su parche actualiza también el RF o la sección de `docs/modelo.md` que corresponda (y el `.puml` si cambia el modelo), y esos archivos van en el `Tocar:` de la tarjeta. También se actualizan actores, permisos, experiencia, referencias visuales y diagramas cuando estén afectados. La versión vigente está en `docs/requisitos/`, `docs/modelo.md` y los complementos del repo; el `DISENO.md` original queda en `docs/archivo/` como foto histórica. *Para qué:* si nadie los actualiza, el mapa de lo que hace la app termina mintiendo.
 - **Las tarjetas se desechan al cerrar la tarea.** Su historia queda en git y en `docs/plan/reportes/`, y la traza «qué tarea cubre qué» queda en el backlog (o, en un cambio, en su mini-diseño).
 - **Una app que ya existe** (por ejemplo CrafTerraria): se documenta solo lo que se toca; el primer cambio sobre un área crea el RF o la sección de `modelo.md` de esa área. *(Pendiente: copiar el esqueleto del método a un repo que ya existe.)*
 
 ## Qué funciona hoy y qué falta
 
-Esta plantilla trae la estructura de carpetas, las guías, los formatos en blanco (`docs/plantillas/`) y un CI mínimo. **Las herramientas de `tools/` se construyen de a una**: hoy existen `init_diseno.py`, `init_plan.py`, `bundle.py` y `cerrar.py`; las demás todavía no. Los pasos que dependen de una herramienta que falta llevan la marca *(pendiente)*; mientras no exista, ese paso hay que hacerlo a mano. Cuando una herramienta existe, se quita su marca. El formato del plan por olas ya lo lee `init_plan.py`. Los del mini-diseño de cambio y de las tarjetas rápida y de refactor están definidos en `docs/plantillas/`, pero todavía no los lee ninguna herramienta.
+Las seis herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py` y `validar.py`. Sus opciones están en `tools/README.md`. Falta probar el ciclo completo con una app real. El mini-diseño de cambios sigue siendo un documento manual; no hay instalador del método para repos existentes.
+
+El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores; las pruebas de `tools/` corren igualmente. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
 
 ## Empezar una app nueva
 
-**Primero el diseño, después el repo.** El diseño cambia mucho al principio, así que vive en un solo archivo (`DISENO.md`) fuera del repo hasta que se cierra. Cada chat de diseño empieza adjuntándolo y termina devolviéndolo actualizado.
+**Primero el diseño, después el repo.** Sigue [Diseñar antes de planificar](DISENAR.md): problema → alcance → comportamiento → apariencia y prototipo si hay UI → viabilidad → revisión de versión. Cada conversación recibe los documentos vigentes y devuelve sus cambios consolidados.
 
-Un diseño está listo para cerrarse cuando:
+Durante el diseño conserva `DISENO.md`, `EXPERIENCIA.md` si aplica, referencias en `visual/` y un inventario en `diagramas/README.md`. Las imágenes son opcionales para explorar apariencia; un prototipo permite comprobar interacciones. La guía incluye prompts para generar imágenes en otro LLM y revisarlas.
 
-- el alcance dice también lo que queda **fuera**;
-- cada requisito (RF) tiene criterios de aceptación comprobables y su línea `Aporta a:`;
-- están las entidades, las relaciones y los flujos principales;
-- la tecnología está decidida (o queda anotada como pendiente);
-- no quedan preguntas marcadas `[BLOQUEA]`;
-- los ADR propuestos se revisaron: se aceptan o se rechazan **en bloque**.
+Un diseño está listo para planificar cuando:
 
-Tú decides si cierras dejando huecos anotados.
+- el alcance delimita dentro/fuera y un primer recorrido útil;
+- actores, roles y permisos aplicables tienen nombres e IDs consistentes;
+- cada RF tiene `Aporta a:` y criterios con evidencia prevista;
+- entidades, reglas con ejemplos y flujos son coherentes con la experiencia;
+- hay referencia visual vigente y prueba del recorrido cuando la interacción lo necesita;
+- los diagramas necesarios están seleccionados y revisados contra sus fuentes;
+- están resueltas las decisiones técnicas y operativas que condicionan la próxima ola;
+- los pendientes indican impacto y momento de resolución; ninguno bloquea el alcance que se va a planificar;
+- la persona confirma la versión, alcance y decisiones necesarias. Puede hacerlo en bloque; el acta propuesta está en la plantilla de diseño.
+
+Se puede aprobar un alcance independiente dejando dudas futuras localizadas. El límite de cuatro criterios no se aplica al diseño.
 
 Con el diseño cerrado:
 
@@ -65,24 +72,24 @@ Con el diseño cerrado:
    ```
 
 3. **Copia `DISENO.md` a la raíz del repo y corre `python tools/init_diseno.py DISENO.md`.** *Para qué:* reparte el diseño en `docs/` (un archivo por requisito y por decisión, más el contexto y el modelo) sin que cortes y pegues. Si el formato tiene errores, te dice en qué línea y no escribe nada. El original se mueve a `docs/archivo/`. Si quieres revisar sin escribir nada, agrega `--check` al final; y si `python` no se reconoce en tu PowerShell, prueba con `py`.
-4. **Revisa con `git status` y `git diff`; luego commit y push.** *Para qué:* ver qué se repartió antes de guardarlo.
-5. **Pide el plan por olas y repártelo con `python tools/init_plan.py PLAN.md`; después, valídalo con `python tools/validar.py`**. *Para qué:* `init_plan.py` revisa el formato y deja en `docs/plan/` la lista completa de tareas (el backlog), su cuadro de cobertura y las tarjetas completas solo de la primera ola. Las demás se escriben cuando les llega el turno, como los planos de detalle de cada piso: se dibujan cuando el piso anterior ya está construido y se puede medir. Si el formato tiene errores, te dice en qué línea y no escribe nada; con `--check` solo revisa. El original se mueve a `docs/archivo/`. `validar.py` comprobará que no falte ni sobre nada: que cada criterio llegue a alguna tarea, que ninguna tarea quede sin criterio ni requisito y que el grafo de dependencias no tenga ciclos.
+4. **Incorpora manualmente los complementos.** Copia `EXPERIENCIA.md` a `docs/experiencia.md`, `visual/` a `docs/visual/` si aplican, e inventario y fuentes a `docs/diagramas/`. Revisa referencias según [DISENAR.md](DISENAR.md#documentos-y-entrega-al-repo). `init_diseno.py` no copia estos archivos. **Revisa con `git status` y `git diff`; luego commit y push.** *Para qué:* ver qué se repartió antes de guardarlo.
+5. **Pide el plan por olas y repártelo con `python tools/init_plan.py PLAN.md`; después, valídalo con `python tools/validar.py`**. *Para qué:* `init_plan.py` revisa el formato y deja en `docs/plan/` la lista completa de tareas (el backlog), su cuadro de cobertura y las tarjetas completas solo de la primera ola. Las demás se escriben cuando les llega el turno, como los planos de detalle de cada piso: se dibujan cuando el piso anterior ya está construido y se puede medir. Si el formato tiene errores, te dice en qué línea y no escribe nada; con `--check` solo revisa. El original se mueve a `docs/archivo/`. `validar.py` comprueba cobertura, matriz y referencias del plan, y detecta ciclos. Son chequeos mecánicos: la revisión humana sigue evaluando si el plan satisface el diseño.
 
 ## Qué pedirle a un LLM en cada etapa
 
 Textos para copiar y pegar. Si algo te cuesta entender, agrega: «explícame con una analogía».
 
-**Diseño.** Adjunta tu enunciado o tus notas y `docs/plantillas/diseno.md` (o tu `DISENO.md` si ya existe):
+**Diseño.** Adjunta tu problema, `docs/DISENAR.md` y `docs/plantillas/diseno.md`; añade los complementos aplicables o sus versiones vigentes:
 
-> Vamos a diseñar una app. Ordena lo que te cuento en el formato de `diseno.md`. Pregunta solo lo que falte; todo lo que yo no haya dicho márcalo como supuesto (S-xx) o pregunta (P-xx), sin inventar cifras. Antes de dar el diseño por cerrado, pregúntame (máximo 5 preguntas por tanda) por lo que cuesta cambiar después: ¿un usuario o varios?, ¿hay login?, ¿idiomas?, ¿datos sensibles?, ¿dónde corre (web, escritorio, móvil)?, ¿cuántos datos? Lo que quede sin resolver anótalo como pregunta P-xx con [BLOQUEA] o como ADR propuesto. Cuando terminemos, devuélveme el `DISENO.md` completo y actualizado.
+> Vamos a diseñar esta app siguiendo DISENAR.md. Primero aclara problema, actores y alcance; luego recorrido, experiencia y viabilidad. Pregunta hasta tres cosas por tanda (hasta cinco si están relacionadas). Separa hechos, supuestos y propuestas; usa los títulos exactos de diseno.md. Si hay UI, prepara EXPERIENCIA.md: podemos explorar imágenes con prompts autocontenidos y probar un prototipo según la interacción. Selecciona el inventario de diagramas. Antes del plan, revisa coherencia, pendientes y evidencia; presenta la versión y el alcance para confirmar. Devuelve los documentos actualizados al terminar cada sesión.
 
-**Diagramas.** Adjunta `DISENO.md`:
+**Diagramas.** Adjunta las fuentes vigentes: diseño (o requisitos y modelo ya repartidos), experiencia si aplica e inventario con el formato de `docs/plantillas/inventario-diagramas.md`:
 
-> A partir de este `DISENO.md`, genera los diagramas en PlantUML: ER de las entidades, secuencia de los flujos principales, despliegue lógico y casos de uso. Un archivo `.puml` por diagrama.
+> Selecciona los diagramas que resuelven dudas del alcance según DISENAR.md. Justifica los tipos omitidos. Genera un .puml por diagrama seleccionado, conserva actores, roles y RF de las fuentes y actualiza el inventario. Distingue generado, renderizado y revisado; no afirmes haber renderizado si no lo hiciste. Si encuentras contradicciones entre fuentes, señálalas para resolverlas.
 
-Con Claude, la skill `puml-diagramas` ya conoce el formato.
+La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las decisiones del proyecto.
 
-**Plan.** Adjunta `DISENO.md`, los diagramas, `docs/plantillas/plan.md` y `docs/plantillas/tarjeta.md`:
+**Plan.** Adjunta la versión y el alcance confirmados del diseño, la experiencia con referencias reales si aplica, el inventario y los diagramas, `docs/plantillas/plan.md` y `docs/plantillas/tarjeta.md`:
 
 > Con esto, arma el plan por olas, en un solo archivo `PLAN.md` con el formato de `plan.md`:
 >
@@ -91,7 +98,8 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 > - Tarjetas completas solo para la ola 1 (la primera rebanada), con el formato de `tarjeta.md`: máximo 4 criterios y un solo módulo propio por tarjeta. Las demás tareas se quedan como línea del backlog.
 > - Cada tarjeta lleva «Fuera de alcance». Para las reglas con números, fechas o dinero, propón 2 a 4 ejemplos aprobados (entrada → resultado esperado) para que yo los apruebe.
 > - Antes de T-001, registra como ADR las decisiones que arrastra el stack (base de datos local, versión mínima del lenguaje).
-> - T-001 es el esqueleto andante: la app arranca, un test pasa y el CI corre. También completa las secciones *Convenciones* y *Comandos* de `docs/00-LEEME-IA.md` y adapta `.github/workflows/ci.yml` al stack.
+> - En UI, las tarjetas citan experiencia y referencias; cada criterio indica evidencia. Preparar el layout compartido en T-001 si cabe, o en una tarea fundacional antes de las pantallas. Los bloqueos compartidos se resuelven con tareas y dependencias explícitas.
+> - T-001 es el esqueleto andante: la app arranca, un test pasa y el CI corre. También completa las secciones *Convenciones* y *Comandos* de `docs/00-LEEME-IA.md` y adapta `.github/workflows/ci.yml` al stack, con build si aplica. Define idioma y formato de docstrings con un ejemplo; en varios servicios identifica sus comandos y la comprobación integrada.
 > - Hito mínimo = el flujo ejecutable más corto de punta a punta; después, el entregable completo.
 > - Entre módulos, contratos con stub. Para lo incierto, exploraciones con tiempo acotado.
 >
@@ -103,7 +111,7 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 **Bug o ajuste.** Adjunta el archivo donde ocurre, su RF y `docs/plantillas/tarjeta.md`:
 
-> Hay un problema: (qué pasa y qué esperabas que pasara). Escribe una sola tarjeta rápida, con el formato de la variante «tarjeta rápida» de `tarjeta.md`. Su primer criterio debe ser el test que reproduce el fallo: falla hoy y pasará cuando esté arreglado. Si ves que hace falta más de un módulo o más de 4 criterios, dímelo antes: subimos de camino.
+> Hay un problema: (qué pasa y qué esperabas que pasara). Escribe una sola tarjeta rápida, con el formato de la variante «tarjeta rápida» de `tarjeta.md`. Su primer criterio debe reproducir el fallo: test que falla antes y pasa después cuando sea automatizable; para un defecto visual, evidencia reproducible de antes/después y las pruebas pertinentes. Registra la tarea nueva en el backlog y cobertura mediante replanificación. Si ves que hace falta más de un módulo o más de 4 criterios, dímelo antes: subimos de camino.
 
 **Tarea.** Pega el bundle debajo de este texto:
 
@@ -125,7 +133,7 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 
 **Chat de hito** (al cerrar cada rebanada; los adjuntos y los pasos están más abajo). Pega esto:
 
-> Es el chat de hito de la rebanada que acabo de cerrar. Haz tres cosas, en este orden. 1) Revisa la coherencia del proyecto: dime si hay decisiones que se contradicen, decisiones tomadas sin registrar o tareas que se saltaron un contrato. 2) Mira la estructura del código: ¿hay algún archivo enorme, código repetido o un módulo que debió separarse? Si algo vale la pena, descríbelo como una tarjeta de refactor `REF-NN` (variante «tarjeta de refactor» de `tarjeta.md`) y **detente ahí**: todavía no escribas las tarjetas de la ola siguiente. 3) Si no hay nada que ordenar (o cuando te traiga el árbol ya ordenado), escribe las tarjetas completas de la ola siguiente, con el árbol real a la vista y el formato de `tarjeta.md`: «Fuera de alcance» en todas y ejemplos aprobados para las reglas con números, fechas o dinero. No cambies el backlog: si crees que hay que cambiarlo, dime qué y por qué.
+> Es el chat de hito de la rebanada que acabo de cerrar. Haz tres cosas, en este orden. 1) Revisa la coherencia del proyecto y la evidencia de uso/UI frente a las referencias vigentes: dime si hay decisiones que se contradicen, decisiones tomadas sin registrar o tareas que se saltaron un contrato. 2) Mira la estructura del código: ¿hay algún archivo enorme, código repetido o un módulo que debió separarse? Si algo vale la pena, descríbelo como una tarjeta de refactor `REF-NN` (variante «tarjeta de refactor» de `tarjeta.md`) y **detente ahí**: todavía no escribas las tarjetas de la ola siguiente. 3) Si no hay nada que ordenar (o cuando te traiga el árbol ya ordenado), escribe las tarjetas completas de la ola siguiente, con el árbol real a la vista y el formato de `tarjeta.md`: «Fuera de alcance» en todas y ejemplos aprobados para las reglas con números, fechas o dinero. No cambies el backlog: si crees que hay que cambiarlo, dime qué y por qué.
 
 ## El ciclo de cada tarea (etapa 4)
 
@@ -136,7 +144,7 @@ Con Claude, la skill `puml-diagramas` ya conoce el formato.
 3. **Aplicar:** guarda el parche en Descargas y pega el bloque de comandos (explicado abajo). *Para qué:* el bloque prueba el parche, lo aplica, corre los tests y recién entonces guarda y sube.
 4. **Verificar:** los tests corren en tu computador antes del commit; el bloque de comandos ya los incluye y, si fallan, se detiene sin guardar nada. El CI de GitHub es la red de seguridad, no la primera prueba.
 5. **Cerrar (recepción provisoria):** `python tools/cerrar.py T-007 reporte.md --llm Claude`. *Para qué:* es el inspector que recibe la obra. Revisa que el reporte esté completo, mira qué archivos cambió el commit (el bloque de comandos ya lo hizo) y te avisa de lo raro: archivos fuera de `Tocar:`, dependencias nuevas, tests antiguos modificados, cambios en contratos. Guarda el reporte en `docs/plan/reportes/` (si estaba en la raíz del repo, lo mueve; si estaba en otra carpeta, lo copia), actualiza `ESTADO.md` y convierte las decisiones que afectan a otras tareas en propuestas de ADR. La tarea queda «en revisión». Si el reporte tiene errores, te dice cuáles y no escribe nada; con `--check` solo ensaya. Si es un segundo intento (por ejemplo, el CI falló y lo corregiste), agrega `--reintento`.
-6. **Decidir y cerrar del todo (recepción definitiva):** revisa con `git diff` y acepta o rechaza las propuestas de ADR (para aceptar una, cambia su línea `Estado: propuesta` por `Estado: aceptada`). Cuando el CI de GitHub salga en verde, corre `python tools/cerrar.py T-007 --hecha`. *Para qué:* «hecha» significa línea base en verde, y eso solo lo sabes tú al mirar el CI. El comando deja la tarea «hecha», borra su tarjeta de `docs/plan/tareas/` con un borrado normal (sin `git rm`) y te dice qué tareas quedaron desbloqueadas. Después haces **un** commit con todo el cierre (`ESTADO.md`, el reporte, las decisiones y la tarjeta borrada): su historia queda en git y en los reportes.
+6. **Decidir y cerrar del todo (recepción definitiva):** revisa con `git diff` y acepta o rechaza las propuestas de ADR (para aceptar una, cambia su línea `Estado: propuesta` por `Estado: aceptada`). Cuando el CI de GitHub salga en verde y se hayan completado las comprobaciones de aceptación exigidas (incluida revisión de UI o uso), corre `python tools/cerrar.py T-007 --hecha`. El script no consulta el CI ni verifica aprobación visual por sí solo. *Para qué:* «hecha» significa línea base en verde, y eso solo lo sabes tú al mirar el CI. El comando deja la tarea «hecha», borra su tarjeta de `docs/plan/tareas/` con un borrado normal (sin `git rm`) y te dice qué tareas quedaron desbloqueadas. Después haces **un** commit con todo el cierre (`ESTADO.md`, el reporte, las decisiones y la tarjeta borrada): su historia queda en git y en los reportes.
 
 Si la tarjeta dice `Modo: estricto`, la tarea son dos parches: mira «Modo estricto» más abajo.
 
@@ -147,10 +155,9 @@ Ejemplo en PowerShell. El LLM te lo entrega ya con tus rutas y el nombre real de
 ```powershell
 cd "$env:USERPROFILE\Desktop\mi-app"
 git status --short   # debe salir vacío
-git apply --check "$env:USERPROFILE\Downloads\T-007-registrar-actividad.patch"
-if ($LASTEXITCODE -eq 0) { git apply "$env:USERPROFILE\Downloads\T-007-registrar-actividad.patch" }
+python tools/aplicar.py "$env:USERPROFILE\Downloads\T-007-registrar-actividad.patch"
 if ($LASTEXITCODE -eq 0) { pytest tests/actividades }   # el comando de test de la tarjeta; si no trae uno, esta línea no va
-if ($LASTEXITCODE -eq 0) { git add -A; git commit -m "feat: registrar actividad" }
+if ($LASTEXITCODE -eq 0) { git add -A; if ($LASTEXITCODE -eq 0) { git commit -m "feat: registrar actividad" } }
 if ($LASTEXITCODE -eq 0) { git push }
 if ($LASTEXITCODE -ne 0) { Write-Host "Algo falló: el bloque se detuvo ahí. Pega aquí lo que dice la terminal." }
 ```
@@ -161,10 +168,9 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Algo falló: el bloque se detuvo ahí. Pe
 |---|---|
 | `cd …` | Entra a la carpeta de tu repo. Confirma la ruta con `pwd`: OneDrive a veces mueve el Escritorio. |
 | `git status --short` | Lista lo que está sin guardar. **Debe salir vacío**: así el `git add -A` solo mete lo del parche. |
-| `git apply --check …` | Prueba si el parche encaja, sin tocar nada. Si va a fallar, falla aquí y tu repo queda intacto. |
-| `git apply …` | Aplica el parche de verdad. |
+| `python tools/aplicar.py …` | Limpia, comprueba y aplica el parche. Si no encaja, diagnostica sin aplicar ninguna parte. |
 | comando de test | Corre los tests de la tarea antes de guardar. Si fallan, no se guarda nada. |
-| `git add -A; git commit -m …` | Marca todos los cambios y los guarda con un mensaje (viene en el reporte). |
+| `git add -A` y luego `git commit -m …`, con freno entre ambos | Marca todos los cambios y los guarda con un mensaje (viene en el reporte). |
 | `git push` | Sube el commit a GitHub. |
 | última línea | Si algo falló, te lo dice; si todo salió bien, no dice nada. |
 
@@ -179,13 +185,11 @@ Para otras terminales (CMD, Git Bash, macOS, Linux), mira la tabla de equivalent
 
 ### Si algo falla (en este orden)
 
-1. **`git status --short` no sale vacío:** hay cambios sin guardar. Haz commit o `git stash` antes. Si no sabes cuál conviene, pega la salida al LLM y pregúntale.
-2. **`--check` dice *corrupt patch*:** repite el `--check` y el `git apply` agregando `--recount` (los números de los encabezados `@@` vienen mal).
-3. **Falla por espacios o fines de línea** (típico al copiar en Windows): agrega también `--ignore-whitespace`.
-4. **Dice *patch does not apply*:** el contexto no coincide. Pega el error al LLM y pídele **solo ese bloque** corregido (hay un texto para eso arriba).
-5. **Último recurso:** `git apply --reject` aplica lo que encaje y deja archivos `*.rej` con lo que no. Revísalos, aplica a mano lo que falte y **bórralos antes del commit** (si no, el `git add -A` los incluiría). Si los parches fallan muy seguido, avísalo: hay un plan B de entrega (archivos completos, o bloques «buscar y reemplazar» sin números de línea).
-6. **Un test falló:** el bloque se detiene antes del commit y el parche queda aplicado, sin guardar. Pega la salida al LLM (el texto «Un test falló», arriba): el parche corregido se aplica **encima** y se guarda todo junto. Por eso, en ese segundo intento, `git status --short` ya no sale vacío: muestra los archivos del primer intento, y es lo esperado.
-7. **Quieres descartar un intento** (el parche quedó aplicado y no sirve): `git stash -u` lo guarda aparte y deja el repo limpio; si ya no lo quieres, `git stash drop`.
+1. **Cambios previos:** antes de una tarea nueva, revisa `git status --short`; resuélvelos antes de aplicar. En un reintento tras un test fallido es normal ver el parche anterior sin commit.
+2. **Falla la aplicación:** `aplicar.py` ya probó la cadena acumulativa y no aplicó ninguna parte. Pega el diagnóstico al LLM. Si devuelve solo el bloque corregido, reemplázalo en el parche original conservando los demás bloques y aplica el parche completo de nuevo. No uses `--reject` sobre tu repo: el diagnóstico ya lo usa en una copia temporal.
+3. **Un test falla después de aplicar:** el parche queda aplicado sin guardar. Pega la salida al LLM con «Un test falló»: el nuevo parche parte de ese estado y corrige código, sin cambiar tests existentes.
+4. **Parche ya aplicado:** revisa el nombre y el diff; no lo apliques otra vez. Indica explícitamente el archivo nuevo.
+5. **Descartar un intento:** `git stash -u` lo guarda aparte y deja limpio el repo; revisa lo guardado antes de decidir borrarlo.
 
 ### Modo estricto (opcional)
 
@@ -203,8 +207,7 @@ Si la tarjeta dice `Modo: estricto`, la tarea son **dos parches**, en este orden
 ```powershell
 cd "$env:USERPROFILE\Desktop\mi-app"
 git status --short   # debe salir vacío
-git apply --check "$env:USERPROFILE\Downloads\T-007-actividades-tests.patch"
-if ($LASTEXITCODE -eq 0) { git apply "$env:USERPROFILE\Downloads\T-007-actividades-tests.patch" }
+python tools/aplicar.py "$env:USERPROFILE\Downloads\T-007-actividades-tests.patch"
 if ($LASTEXITCODE -eq 0) { pytest tests/actividades }   # aquí se ESPERA que falle: lee el mensaje
 ```
 
@@ -213,11 +216,19 @@ Lee lo que salió (los nombres son de Python; en otro lenguaje busca lo equivale
 - **Rojo correcto:** el mensaje habla de lo que falta (`NotImplementedError`, o una comprobación que no se cumple: `AssertionError`).
 - **Rojo equivocado:** el test ni siquiera llegó a ejecutarse (`ImportError`, `ModuleNotFoundError`, `SyntaxError`, `NameError`). Pega la salida al LLM (el texto «Un test falló») y pídele el parche corregido, que se aplica encima.
 
+En Python, el comando recomendado para el parche 1 es:
+
+```powershell
+python tools/aplicar.py "$env:USERPROFILE\Downloads\T-007-actividades-tests.patch" --estricto "pytest tests/actividades"
+```
+
+Este comando reemplaza la aplicación y el test del ejemplo anterior; no ejecutes ambos ejemplos seguidos. Devuelve 0 si reconoce el rojo esperado y 1 si el test pasa, falla por otro motivo o no puede clasificarlo. Con 1, revisa el mensaje antes de continuar; el parche sigue aplicado. Para otros lenguajes conserva la revisión manual.
+
 Si el rojo es el correcto, pega este segundo bloque (el commit) y sigue con el parche 2:
 
 ```powershell
 git add -A
-git commit -m "test: registrar actividad (rojo)"
+if ($LASTEXITCODE -eq 0) { git commit -m "test: registrar actividad (rojo)" }
 if ($LASTEXITCODE -eq 0) { git push }
 ```
 
@@ -229,17 +240,32 @@ Los tests pueden pasar y la app, aun así, no servir. Al terminar cada rebanada 
 
 **Primero, la prueba de uso.** Corre la app y haz tú mismo un recorrido corto, como lo haría quien la va a usar. *Para qué:* es la única comprobación que no depende de lo que escribió el LLM.
 
-1. Pide el recorrido a un LLM, con `docs/modelo.md` adjunto:
+1. Pide el recorrido a un LLM con el modelo, actores y experiencia aplicable; adjunta las referencias visuales reales:
 
-   > Con los flujos principales de este modelo, escríbeme una prueba de uso de 3 a 5 pasos para lo que ya funciona: qué hacer en cada paso y qué debería pasar.
+   > Con los flujos principales, actores y experiencia vigente si aplica, escríbeme una prueba de uso de 3 a 5 pasos para lo que ya funciona: qué hacer en cada paso y qué debería pasar.
 
-2. Haz los pasos. Si alguno falla, anótalo: es una tarea nueva (con su test), no un parche suelto.
+2. Haz los pasos. Si hay UI, comprueba acción principal, recuperación de error, tamaños previstos, teclado, foco y legibilidad. Registra versión, resultado y capturas pertinentes. Si falla una tarea ya cerrada, registra una nueva corrección con su evidencia.
+3. Contrasta el conjunto con las referencias aprobadas. Estas comprobaciones también se realizan durante cada tarea de UI; el hito revisa la coherencia global.
 
-**Después, el chat de hito.** Un chat nuevo por rebanada, de preferencia con otro LLM. *Para qué:* unos ojos frescos revisan lo hecho, miran si el código se está enredando y dejan escritas las tarjetas de la ola siguiente, todo en un solo chat para gastar menos. Adjunta la salida de `git ls-files` (el árbol real), el índice de decisiones, los ADR relacionados con la rebanada, la salida de `git log --oneline`, `docs/plan/backlog.md` y `docs/plantillas/tarjeta.md`, y pega el texto «Chat de hito» (arriba, entre los prompts).
+**Después, el chat de hito.** Un chat nuevo por rebanada, de preferencia con otro LLM. *Para qué:* unos ojos frescos revisan lo hecho, miran si el código se está enredando y dejan escritas las tarjetas de la ola siguiente, todo en un solo chat para gastar menos. Adjunta la salida de `git ls-files` (el árbol real), el índice de decisiones, los ADR relacionados con la rebanada, la salida de `git log --oneline`, `docs/plan/backlog.md` y `docs/plantillas/tarjeta.md`, la experiencia y evidencia de uso si hay UI, y pega el texto «Chat de hito» (arriba, entre los prompts).
 
 - Si el LLM propone un refactor (una tarjeta `REF-NN`), se ejecuta como cualquier tarea, con la regla extra de que los tests no cambian y siguen verdes, **antes** de escribir las tarjetas de la ola siguiente. *Para qué:* así las tarjetas se escriben sobre un árbol ya ordenado y no sobre uno que va a cambiar. Cuando termine, vuelve al mismo chat con el `git ls-files` nuevo y pídele el paso 3.
 - Las tarjetas nuevas se reparten con `python tools/init_plan.py PLAN-ola2.md` (un archivo con solo `## Tarjetas de la ola 2`). *Para qué:* las verifica contra el backlog guardado y no pisa las tarjetas que ya existen.
 - Escribir las tarjetas de la ola siguiente es rutina. **Cambiar el backlog** (orden, dependencias, tareas nuevas) es replanificar: se guarda como un archivo nuevo, `PLAN-v2.md`, con las tres secciones, la versión siguiente y su `Motivo del cambio:` (formato en `docs/plantillas/plan.md`), y se reparte con `python tools/init_plan.py PLAN-v2.md`. *Para qué:* reemplaza `backlog.md` y `cobertura.md` por los nuevos y deja como están las tarjetas que ya existen.
+
+## Documentar correcciones
+
+| Situación | Qué hacer | Dónde queda |
+|---|---|---|
+| El parche no se aplica | Corregir el parche de la misma tarea; una aplicación rechazada no dejó cambios parciales. | Registrar el incidente si explica una limitación o decisión; no hace falta un registro de cada intento de formato. |
+| Falla una tarea abierta | Corregir la misma tarea. Si ya está en revisión, seguir `cerrar.py --reintento`. | Reporte de la tarea y commits existentes. |
+| Aparece un bug después del cierre | Crear una T-NNN nueva, rápida si cabe; registrarla en backlog y cobertura con replanificación. | Nueva tarjeta, reporte y commits, citando RF y tarea de origen cuando se conozca. |
+
+En `Hecho` del reporte escribe fallo, comportamiento esperado, causa encontrada (o desconocida) y solución. En `Cómo probar`, reproducción y evidencia de antes/después: test de regresión cuando sea automatizable o evidencia visual reproducible y pruebas pertinentes. Mantén las seis secciones de la plantilla. Usa el ID de tarea en el commit, por ejemplo `fix: T-023 conservar datos al reintentar`.
+
+`cerrar.py --reintento` escribe en la misma ruta del reporte. Git conserva versiones anteriores solo si se guardaron en commits; resume en el reporte final los intentos no guardados que sea importante conservar. No es necesario almacenar cada `.patch` además del código versionado y su explicación.
+
+Si el código incumplía un requisito correcto, ese requisito se conserva. Si estaba mal el diseño, actualiza también RF, roles, experiencia o diagramas afectados y decláralos en `Tocar:`. Una corrección no se disfraza de REF.
 
 ## Hábitos que ahorran tokens y esperas
 

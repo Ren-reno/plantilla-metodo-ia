@@ -1,7 +1,7 @@
 # CI mínimo de la plantilla. Corre en GitHub (sin IA) en cada push a main y en cada pull request.
 #
 # Hace cuatro cosas, y cada una se salta sola mientras todavía no aplica:
-#   1. Valida diseño, plan y diagramas, si existe tools/validar.py.
+#   1. Valida diseño y plan, si existen tools/validar.py y el backlog repartido.
 #   2. Prueba las herramientas de tools/, si existe tools/tests/.
 #   3. Instala dependencias, si existe requirements.txt.
 #   4. Corre los tests, si hay archivos test_*.py (o *_test.py) dentro de tests/.
@@ -48,10 +48,12 @@ jobs:
 
       - name: Validar diseño y plan
         run: |
-          if [ -f tools/validar.py ]; then
-            python tools/validar.py
-          else
+          if [ ! -f tools/validar.py ]; then
             echo "::notice::Todavía no existe tools/validar.py: se omite la validación."
+          elif [ ! -f docs/plan/backlog.md ]; then
+            echo "::notice::Todavía no hay docs/plan/backlog.md: se omite la validación de diseño y plan hasta repartir el plan con init_plan.py. Las pruebas de tools/ se ejecutan igualmente."
+          else
+            python tools/validar.py
           fi
 
       - name: Probar las herramientas de tools/

@@ -1,5 +1,5 @@
 <!--
-  Plantilla de DISENO.md. Es un solo documento vivo: cada chat de diseño lo recibe y lo devuelve actualizado.
+  Plantilla de DISENO.md. Es el documento principal de diseño: cada chat de diseño lo recibe y lo devuelve actualizado.
   Los títulos (## y ###) deben quedar EXACTAMENTE así: los scripts (init_diseno.py, validar.py) los usan para repartir y revisar.
   Lo que va entre «» se reemplaza. Borra estos comentarios al llenar el documento.
 
@@ -7,7 +7,9 @@
   RNF requisito no funcional · ADR decisión · P pregunta abierta · S supuesto · T tarea.
   Lo que el enunciado no dice se marca como supuesto (S-xx) o pregunta (P-xx). No inventes cifras.
 
-  Antes de dar el diseño por cerrado, pregunta (máximo 5 preguntas por tanda) por lo que cuesta cambiar después:
+  Sigue docs/DISENAR.md; usa el complemento experiencia.md si hay UI y el inventario de diagramas.
+  No añadas nuevos títulos ##: los complementos se copian manualmente. D16 no limita el diseño.
+  Antes de dar el diseño por cerrado, pregunta (hasta 3 preguntas por tanda, ampliables hasta 5) por lo que cuesta cambiar después:
   ¿un usuario o varios?, ¿hay login?, ¿idiomas?, ¿datos sensibles o privados?, ¿dónde corre (web, escritorio, móvil)?,
   ¿cuántos datos o usuarios? Lo que quede sin resolver va como pregunta P-xx con [BLOQUEA T-xxx], o como ADR propuesto.
 -->
@@ -21,12 +23,38 @@
 
 ## Actores
 
-«Quién usa la app o interactúa con ella.»
+<!-- ACT y ROL son referencias documentales, no categorías admitidas en Cubre. Usa IDs estables y No aplica con motivo donde corresponda. -->
+**Actores**
+
+| ID | Nombre | Tipo (persona / sistema externo) | Objetivo | Roles aplicables | RF relacionados |
+|---|---|---|---|---|---|
+| ACT-001 | «nombre» | «tipo» | «objetivo» | «ROL-001 o No aplica» | «RF-001» |
+
+**Roles y permisos, si aplican**
+
+| ID | Nombre | Responsabilidad | Alcance de datos |
+|---|---|---|---|
+| ROL-001 | «nombre» | «responsabilidad» | «datos propios / compartidos / condición» |
+
+| Rol | Acción | Recurso | Condición | Permitido | Regla relacionada |
+|---|---|---|---|---|---|
+| ROL-001 | «acción» | «recurso» | «condición explícita» | «sí / no» | «RN-01» |
+
+«Si no hay roles o control de acceso, sustituye las tablas no aplicables por el motivo. Una persona puede desempeñar varios roles; no inventar cuentas.»
 
 ## Alcance (dentro / fuera)
 
 - Dentro: «…»
 - Fuera: «lo que explícitamente no se hará»
+
+**Revisión para planificar**
+
+- Versión revisada y complementos: «DISENO.md, EXPERIENCIA.md si aplica, inventario y referencias»
+- Alcance listo: «recorridos»
+- Evidencia revisada: «prototipo, referencias, ejemplos o exploraciones; distinguir lo pendiente»
+- Pendientes y bloqueos: «P-xx → impacto → cuándo resolver»
+- Dictamen propuesto: «LISTO / LISTO PARA ALCANCE ACOTADO / FALTA RESOLVER»
+- Decisión del usuario: «confirmación de versión y alcance, o pendiente»
 
 ## Criterios de éxito
 
@@ -38,12 +66,12 @@
 
 ## Funcionalidades
 
-<!-- Un bloque ### por requisito. La línea Aporta a: va inmediatamente bajo el título. Cada criterio de aceptación debe poder comprobarse con un test. -->
+<!-- Un bloque ### por requisito. La línea Aporta a: va inmediatamente bajo el título. Cada criterio tiene evidencia definida: test para lo automatizable, revisión visual o prueba de uso cuando corresponda. No declarar como realizada una comprobación prevista. -->
 
 ### RF-001 · «Nombre del requisito»
 Aporta a: C1
 Criterios de aceptación:
-- «criterio comprobable»
+- «comportamiento observable; evidencia prevista: test / revisión visual / prueba de uso»
 - [PENDIENTE P-01] «criterio que depende de una pregunta abierta»
 
 ## Datos principales (entidades y relaciones)
@@ -69,7 +97,12 @@ Criterios de aceptación:
 
 <!-- Lo decidido y lo pendiente. Elegir un stack arrastra decisiones derivadas (base local, versión mínima del lenguaje): regístralas como ADR antes de T-001. -->
 
-«Stack.»
+«Stack y decisiones que condicionan el primer incremento.»
+
+- Ejecución y operación mínima: «dónde corre, cómo arrancar y comprobar; despliegue y recuperación si aplica»
+- Convenciones previstas: «estructura, comandos por servicio, idioma y formato de docstrings según el stack; T-001 los concreta»
+- Experiencia: «EXPERIENCIA.md durante diseño → docs/experiencia.md al incorporar; o No aplica con motivo»
+- Diagramas: «inventario diagramas/README.md → docs/diagramas/README.md; tipos elegidos y omitidos con motivo»
 
 ## Decisiones
 

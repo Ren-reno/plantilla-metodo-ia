@@ -4,6 +4,12 @@ Si necesitas saber **X**, mira **Y**:
 
 | Necesitas saber… | Mira |
 |---|---|
+| Cómo usar las seis herramientas y entender sus códigos de salida | `../tools/README.md` |
+| Cómo diseñar antes de planificar | [DISENAR.md](DISENAR.md) |
+| Actores, roles y permisos | Sección Actores de `requisitos/contexto.md` |
+| Pantallas, navegación, estilo y evidencia de uso | `experiencia.md` y referencias en `visual/`, si hay UI |
+| Qué diagramas se eligieron y su estado | `diagramas/README.md` |
+| Qué se corrigió y cómo se comprobó | `plan/reportes/` y commits de la tarea |
 | Qué debe hacer la app | `requisitos/` |
 | Por qué se eligió algo | `decisiones/` |
 | Por qué se hizo un cambio y cómo se pensó (su mini-diseño) | `cambios/` |
@@ -13,16 +19,17 @@ Si necesitas saber **X**, mira **Y**:
 | Qué tareas forman el plan y qué cubre cada una | `plan/backlog.md` y `plan/cobertura.md` |
 | Cómo escribir código y qué comandos usar | `00-LEEME-IA.md` |
 | Cómo trabajar con este repo (guía para ti) | `COMO-TRABAJAR.md` |
-| Los formatos en blanco (diseño, plan, tarjeta, ADR, reporte, cambio) | `plantillas/` |
+| Los formatos en blanco (diseño, experiencia, inventario de diagramas, plan, tarjeta, ADR, reporte, cambio) | `plantillas/` |
 | El diseño original, antes de repartirlo | `archivo/` (solo histórico) |
 
 ## Qué aparece y cuándo
 
-Una plantilla recién creada no trae varios de esos archivos: los generan las herramientas de `tools/`.
+Una plantilla recién creada no trae varios de esos archivos: algunos los generan las herramientas de `tools/` y otros se incorporan manualmente.
 
 | Archivo o carpeta | Lo genera |
 |---|---|
 | `requisitos/` (un archivo por requisito, más `contexto.md`), `decisiones/` (una decisión por archivo), `modelo.md` | `tools/init_diseno.py`, a partir de `DISENO.md` |
+| `experiencia.md`, `visual/` si aplican, y `diagramas/README.md` con fuentes .puml | Incorporación manual del paquete de diseño; ver [DISENAR.md](DISENAR.md#documentos-y-entrega-al-repo) |
 | `plan/backlog.md`, `plan/cobertura.md`, `plan/tareas/` | `tools/init_plan.py`, a partir del plan |
 | `bundles/` (en la raíz del repo, no en `docs/`; git la ignora) | `tools/bundle.py`, un archivo por tarea |
 | `plan/ESTADO.md`, `plan/reportes/` (un reporte por tarea cerrada) y el índice de `decisiones/` (`decisiones/README.md`) | `tools/cerrar.py` |
@@ -40,3 +47,5 @@ Una plantilla recién creada no trae varios de esos archivos: los generan las he
 ## Identificadores
 
 `C` criterio de éxito propio (`R` si viene de una rúbrica) · `RF` requisito funcional · `RN` regla de negocio · `RNF` requisito no funcional · `ADR` decisión · `P` pregunta abierta · `S` supuesto · `T` tarea.
+
+`ACT-xxx` y `ROL-xxx` identifican actores y roles en los documentos y diagramas. Son referencias documentales: los scripts no validan sus relaciones ni los admiten como categorías de `Cubre:`.

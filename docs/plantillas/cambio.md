@@ -8,6 +8,8 @@
     sube al camino completo (DISENO.md).
   - `RF que modifica o crea` mantiene vivo el mapa requisito → tarea. Si el RF todavía no existe, la primera tarjeta lo
     crea (con su línea `Aporta a:`) y lo lista en `Tocar:`.
+  - Si cambia experiencia, actores, permisos o diagramas, incluir sus documentos vigentes en Leer/Tocar y actualizar
+    las referencias y pruebas de uso afectadas. Aplicar solo los pasos de docs/DISENAR.md pertinentes al cambio.
   - Si cambia el modelo, la primera tarjeta actualiza docs/modelo.md (solo la sección que cambia) y, si existe, el `.puml`.
   - Ejemplos aprobados: solo si hay reglas con números, fechas o dinero (2 a 4, «entrada → resultado»). El LLM los
     propone y tú los apruebas. Si no aplican, borra la sección.
