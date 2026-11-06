@@ -13,14 +13,19 @@ RAIZ = Path(__file__).resolve().parents[2]
 BASH = shutil.which("bash")
 
 
+def bloque(nombre: str) -> str:
+    """El script real de un paso del workflow, para ejecutarlo tal cual."""
+    workflow = (RAIZ / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    paso = workflow.split(f"      - name: {nombre}\n", 1)[1]
+    crudo = paso.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    return textwrap.dedent(crudo)
+
+
 @unittest.skipUnless(BASH, "se necesita Bash para ejecutar el bloque del CI")
 class TestIntegracionCI(unittest.TestCase):
     def setUp(self):
         self.repo = RepoTemporal(self)
-        workflow = (RAIZ / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        paso = workflow.split("      - name: Validar diseño y plan\n", 1)[1]
-        bloque = paso.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
-        self.script = textwrap.dedent(bloque)
+        self.script = bloque("Validar diseño y plan")
 
     def correr_ci(self):
         entorno = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -77,6 +82,57 @@ class TestIntegracionCI(unittest.TestCase):
         r = self.correr_ci()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("::notice::Todavía no existe tools/validar.py", r.stdout)
+
+
+@unittest.skipUnless(BASH, "se necesita Bash para ejecutar el bloque del CI")
+class TestComprobarElProyecto(unittest.TestCase):
+    """El paso que comprueba el proyecto: lee los comandos de comprobaciones.json, no los trae."""
+
+    CONFIG = ('{"version": 1, "distribucion": "solo-yo", "stacks": {"python": '
+              '{"pruebas": ["python", "-B", "-m", "unittest", "discover", "-s", "tests"]}}}\n')
+
+    def setUp(self):
+        self.repo = RepoTemporal(self)
+        shutil.copy(RAIZ / "tools/comprobar.py", self.repo.dir / "tools/comprobar.py")
+        self.script = bloque("Comprobar el proyecto")
+
+    def correr_ci(self):
+        entorno = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+        entorno["PATH"] = str(Path(sys.executable).parent) + os.pathsep + entorno.get("PATH", "")
+        return subprocess.run([BASH, "--noprofile", "--norc", "-e", "-c", self.script],
+                              cwd=str(self.repo.dir), env=entorno, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+
+    def test_plantilla_vacia_avisa_que_no_probo_nada(self):
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("::warning::", r.stdout)
+        self.assertIn("no probó nada", r.stdout)
+
+    def test_tests_sin_comandos_declarados_detiene_el_ci(self):
+        self.repo.poner("tests/test_humo.py", "def test_humo():\n    assert True\n")
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("::error::", r.stdout)
+        self.assertIn("comprobaciones.json", r.stdout)
+
+    def test_con_comandos_declarados_ejecuta_las_pruebas_del_proyecto(self):
+        self.repo.poner("comprobaciones.json", self.CONFIG)
+        self.repo.poner("tests/test_humo.py",
+                        "import unittest\n\n\nclass T(unittest.TestCase):\n"
+                        "    def test_ok(self):\n        self.assertTrue(True)\n")
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("1 pruebas ejecutadas", r.stdout)
+        self.assertIn("Comprobación superada", r.stdout)
+
+    def test_un_verde_que_no_probo_nada_detiene_el_ci(self):
+        self.repo.poner("comprobaciones.json",
+                        '{"version": 1, "distribucion": "solo-yo", "stacks": {"js": '
+                        '{"pruebas": ["python", "-c", "print(\'sin pruebas\')"]}}}\n')
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("Comprobación fallida", r.stdout)
 
 
 if __name__ == "__main__":

@@ -202,6 +202,28 @@ class Armado(unittest.TestCase):
         t = r.armar("T-001").texto
         self.assertLess(posicion(t, "### docs/00-LEEME-IA.md"), posicion(t, "### docs/modelo.md"))
 
+    def test_los_comandos_del_proyecto_viajan_con_las_reglas_cuando_ya_existen(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        r.poner("comprobaciones.json", '{"version": 1, "distribucion": "solo-yo"}\n')
+        t = r.armar("T-001").texto
+        self.assertLess(posicion(t, "### docs/00-LEEME-IA.md"), posicion(t, "### comprobaciones.json"))
+        self.assertIn('"distribucion": "solo-yo"', t)
+
+    def test_sin_comandos_declarados_el_bundle_se_arma_igual(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        res = r.armar("T-001")
+        self.assertEqual(res.negativas, [])
+        self.assertNotIn("### comprobaciones.json", res.texto)   # la nota de la cabecera no es una sección
+
+    def test_los_comandos_no_se_repiten_si_la_tarjeta_tambien_los_pide(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", leer="docs/00-LEEME-IA.md · comprobaciones.json", tocar="src/a.py")
+        r.poner("comprobaciones.json", '{"version": 1}\n')
+        t = r.armar("T-001").texto
+        self.assertEqual(t.count("### comprobaciones.json"), 1)
+
     def test_sin_las_reglas_no_hay_bundle(self):
         r = Repo(self, leeme=False)
         r.tarjeta("T-001", depende="—")

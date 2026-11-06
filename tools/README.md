@@ -2,7 +2,7 @@
 
 Herramientas locales del método. Son scripts de Python que usan solo la biblioteca estándar (no hay nada que instalar; funcionan con Python 3.7 o más) y se corren desde la raíz del repo: `python tools/<nombre>.py`. Si `python` no se reconoce en Windows, usa `py`.
 
-**Estado:** las seis herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py` y `validar.py`. El ciclo completo con una app real sigue pendiente de validación.
+**Estado:** las siete herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py`, `validar.py` y `comprobar.py`. El ciclo completo con una app real se recorrió una vez; eso no valida el método.
 
 | Herramienta | Para qué sirve | Orden | Estado |
 |---|---|---|---|
@@ -12,6 +12,7 @@ Herramientas locales del método. Son scripts de Python que usan solo la bibliot
 | `aplicar.py` | Aplica el parche más reciente de tu carpeta de parches, con comprobaciones acumulativas y diagnóstico | 3 | listo |
 | `cerrar.py T-007 reporte.md` | Valida el reporte, actualiza `ESTADO.md`, crea propuestas de ADR y avisa de cosas raras | 4 | listo |
 | `validar.py` | Revisa que diseño, plan, cobertura, tarjetas y código sean coherentes entre sí | 5 | listo |
+| `comprobar.py rapido` / `entrega` | Ejecuta las comprobaciones del proyecto declaradas en `comprobaciones.json` y falla cuando un paso termina bien sin haber probado nada | durante y antes de entregar | listo |
 
 ## init_diseno.py
 
@@ -100,7 +101,7 @@ Trae, en este orden (el que fija `docs/00-LEEME-IA.md`):
 | Árbol del repo | Los archivos que existen y git conoce, más los nuevos que no ignora |
 | Entorno del usuario | `~/.metodo-ia.json` (claves `terminal` y `carpeta_parches`); la carpeta del repo es esta. Lo que falte se marca «(sin configurar)» y el LLM lo pregunta una vez: no se inventa nada |
 | Tarjeta | `docs/plan/tareas/T-007.md`, tal cual |
-| Documentos que la tarjeta manda leer | Los de `Leer:`. `docs/00-LEEME-IA.md` va siempre primero, lo pida o no la tarjeta |
+| Documentos que la tarjeta manda leer | Los de `Leer:`. `docs/00-LEEME-IA.md` va siempre primero, lo pida o no la tarjeta, y `comprobaciones.json` va con él cuando ya existe: así los comandos del proyecto viajan sin repetirse en ningún otro documento |
 | Archivos de `Tocar:` que ya existen | Su contenido actual. Lo que aún no existe se lista como «por crear» |
 
 - **Sin duplicar.** Un archivo que está en `Leer:` y en `Tocar:` viaja una sola vez. Los textos se normalizan a saltos LF y sin BOM, como los guarda git. Las vallas son de 4 acentos graves, o más si un archivo ya trae vallas largas. Los archivos binarios o que no están en UTF-8 se omiten con aviso. Nunca lee fuera del repo.
@@ -165,7 +166,7 @@ Opciones de datos y ensayo: `--desde REF` (commit desde el que mirar lo que camb
 - **Decisiones.** Cada decisión del reporte que termina en «Afecta a otras tareas» se convierte en `docs/decisiones/NNNN-slug.md` con `Estado: propuesta` (el siguiente número libre). `bundle.py` se niega a usarla hasta que la aceptes. El índice `docs/decisiones/README.md` (ADR · título · estado) se regenera completo en cada ejecución a partir de los propios ADR: nadie lo edita.
 - **Rojo del modo estricto:** `cerrar.py --parcial` no lo clasifica; esa ayuda está en `aplicar.py --estricto` para Python. Revisa igualmente el mensaje del test.
 - **Nunca modifica git.** Solo lo lee (con una lista blanca de comandos de lectura, probada). Todo lo que escribe queda sin commit para que lo revises con `git diff`. La tarjeta se borra con un borrado normal de archivo, no con `git rm`: tú la guardas en el commit de cierre, junto con `ESTADO.md`.
-- **Codificación.** Lee y escribe todo en UTF-8: el reporte puede traer BOM o saltos de línea de Windows, y lo que escribe va sin BOM y con saltos LF. Una prueba revisa el código de las cinco herramientas y falla si algún `open`, `read_text` o `write_text` no declara su `encoding` (o si una escritura no fija el salto de línea), porque en Windows el valor predeterminado (cp1252) fallaría con «·» y con «».
+- **Codificación.** Lee y escribe todo en UTF-8: el reporte puede traer BOM o saltos de línea de Windows, y lo que escribe va sin BOM y con saltos LF. Una prueba revisa el código de las seis herramientas que escriben o leen texto y falla si algún `open`, `read_text` o `write_text` no declara su `encoding` (o si una escritura no fija el salto de línea), porque en Windows el valor predeterminado (cp1252) fallaría con «·» y con «».
 - **Códigos de salida:** 0 hecho · 1 el reporte tiene errores o el estado de la tarea no lo permite · 2 problema de uso o del entorno (no existe la tarjeta, no hay git, no se pudo escribir).
 - **Necesita** git y los archivos `bundle.py`, `init_plan.py` e `init_diseno.py` junto a él en `tools/`.
 
@@ -195,11 +196,43 @@ Comprueba:
 
 - **Códigos de salida:** 0 todo bien · 1 errores de coherencia (o avisos con `--estricto`) · 2 problema de uso o entorno (falta `docs/` o `backlog.md`).
 
+## comprobar.py
+
+Ejecuta las comprobaciones del proyecto. Su razón de ser: **«el comando salió sin error» y «se probó algo» no son lo mismo**, y hasta ahora nada comprobaba la diferencia. Un paso que termina bien sin ejecutar ninguna prueba se reporta como FALLO, no como éxito.
+
+```powershell
+python tools/comprobar.py rapido       # durante los cambios
+python tools/comprobar.py entrega      # antes de entregar o de cerrar
+python tools/comprobar.py --listar     # qué configuración lee y qué haría cada perfil
+python tools/comprobar.py --ejemplo    # imprime un comprobaciones.json inicial
+python tools/comprobar.py entrega --repo DIR --python RUTA --timeout 900
+```
+
+- **No tiene comandos propios.** Los lee de `comprobaciones.json`, en la raíz del repo: el mismo archivo que usas tú, que usa el LLM y que usa el CI. Una sola definición por proyecto; lo crea T-001 al decidir el stack. Sin ese archivo no se inventa nada: devuelve 2 y te manda a `--ejemplo`.
+- **No instala, no aplica parches, no toca el plan ni cierra tareas.** Solo ejecuta y reporta. Lo único que escribe es su propio log.
+- **Pasos disponibles:** `plan` (corre `validar.py --estricto`), `pruebas` (por stack), `dependencias` (por stack), `comandos`, `version`, `plataformas`, `licencia` y `herramientas`. En un perfil, `pruebas` y `dependencias` se abren por stack; también puedes nombrar uno solo: `pruebas:python`.
+- **Perfiles.** Sin `perfiles` en la configuración: `rapido` = plan y pruebas; `entrega` = además dependencias, comandos, version, plataformas y licencia.
+- **Qué comprueba cada paso que hoy nadie comprueba:**
+  - `pruebas`: el comando debe terminar bien **y** haber ejecutado al menos una prueba. Reconoce el conteo de unittest, pytest, jest, vitest, mocha y `node --test`. Si no puede contar, falla y lo dice: un verde sin pruebas no demuestra nada.
+  - `dependencias`: los archivos declarados existen y, con `"fijadas": true`, cada línea de un `.txt` fija versión exacta con `==`. Un `>=` no es una instalación reproducible.
+  - `comandos`: cada comando documentado existe. Resuelve el programa y **localiza** los módulos que nombra (`-m paquete` y `paquete.modulo:objeto`) sin importarlos ni ejecutarlos.
+  - `version`: hay versión de producto en los manifiestos y no se contradicen.
+  - `plataformas`: las plataformas declaradas aparecen en el workflow del CI. Una plataforma declarada que nadie ejecuta es una promesa, no una comprobación.
+  - `licencia`: hay archivo de licencia cuando el software se distribuye a terceros.
+- **Proporcional al alcance de distribución** (`distribucion` en la configuración: `solo-yo`, `mis-dispositivos` u `otras-personas`). Con `solo-yo` se omiten `version`, `plataformas` y `licencia`: una herramienta personal no paga el coste de un producto distribuido. Ver la etapa 5 de `../docs/COMO-TRABAJAR.md`.
+- **Excepciones declaradas.** Un proyecto puede empezar legítimamente sin pruebas de un stack. Eso se declara en `excepciones` con `paso`, `motivo` y, para que no se vuelva permanente, `hasta` y `fecha`. El paso aparece como EXCEPCION, no frena, y se imprime en cada ejecución como «deuda declarada, no verde»: la información queda a la vista en vez de esconderse en el código.
+- **Salida.** Una línea por paso con estado, segundos y detalle; los logs completos van a `.comprobaciones/<sello>/` (git la ignora). Estados: OK · FALLO · TIMEOUT · OMITIDO · EXCEPCION.
+- **Suites largas.** No las sondees con el modelo. Córrelas tú en la terminal o déjalas al CI y entrégale al agente el resumen; `--timeout` existe para que una suite colgada falle en vez de esperar para siempre.
+- **Códigos de salida:** 0 todo bien · 1 alguna comprobación falló · 2 problema de uso o entorno (no hay configuración, es inválida, el perfil no existe).
+- **Pruebas:** 39 casos propios, incluidos los cinco verdes falsos del piloto, y cuatro más en `test_ci.py` que ejecutan el bloque real del workflow.
+
 ## Integración con CI
 
 El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores; las pruebas de `tools/` corren igualmente. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
 
-Las siete pruebas de `test_ci.py` ejecutan el bloque real en Bash: plantilla vacía, diseño sin plan, plan válido, incoherente, backlog dañado, fallo interno y herramienta ausente.
+El paso que comprueba el proyecto no trae su propia lista de comandos: si existe `comprobaciones.json`, corre `comprobar.py entrega`. Si hay tests en `tests/` pero no existe ese archivo, el CI se detiene y lo explica, porque nadie puede saber qué significa «probar este proyecto»; y si no hay ni archivo ni tests, avisa en amarillo que no probó nada.
+
+Las once pruebas de `test_ci.py` ejecutan los bloques reales en Bash. Validación: plantilla vacía, diseño sin plan, plan válido, incoherente, backlog dañado, fallo interno y herramienta ausente. Comprobación del proyecto: plantilla vacía, tests sin comandos declarados, comandos declarados que ejecutan pruebas de verdad, y un verde que no probó nada.
 
 ## Si vas a construir una herramienta
 
@@ -209,6 +242,7 @@ Las siete pruebas de `test_ci.py` ejecutan el bloque real en Bash: plantilla vac
 - La integración del CI decide cuándo existe un plan que validar; no convierte los errores del validador en éxitos.
 - `bundle.py` deja sus archivos en `bundles/`, una carpeta que git ignora (son derivados y pesados).
 - Las preferencias del usuario (terminal y carpeta de parches) viven fuera del repo, en `~/.metodo-ia.json` (claves `terminal` y `carpeta_parches`): `bundle.py` las vuelca en la sección «Entorno del usuario» y `aplicar.py` las usa.
+- Los comandos del proyecto viven una sola vez, en `comprobaciones.json`, y los leen `comprobar.py` y el CI. Una herramienta nueva que necesite correr algo del proyecto los toma de ahí; no los repite.
 - `cerrar.py` es el único escritor de `docs/plan/ESTADO.md` y del índice de `docs/decisiones/`. `docs/plan/backlog.md` lo escribe el chat de plan o de hito y lo aprueba la persona; `init_plan.py` solo lo reparte.
 - Las plantillas en blanco están en `docs/plantillas/`.
 

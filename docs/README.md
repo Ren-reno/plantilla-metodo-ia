@@ -4,7 +4,8 @@ Si necesitas saber **X**, mira **Y**:
 
 | Necesitas saber… | Mira |
 |---|---|
-| Cómo usar las seis herramientas y entender sus códigos de salida | `../tools/README.md` |
+| Cómo usar las siete herramientas y entender sus códigos de salida | `../tools/README.md` |
+| Qué comandos tiene el proyecto y qué se comprueba antes de entregar | `../comprobaciones.json` y `../tools/README.md` |
 | Cómo diseñar antes de planificar | [DISENAR.md](DISENAR.md) |
 | Actores, roles y permisos | Sección Actores de `requisitos/contexto.md` |
 | Pantallas, navegación, estilo y evidencia de uso | `experiencia.md` y referencias en `visual/`, si hay UI |
@@ -31,6 +32,8 @@ Una plantilla recién creada no trae varios de esos archivos: algunos los genera
 | `requisitos/` (un archivo por requisito, más `contexto.md`), `decisiones/` (una decisión por archivo), `modelo.md` | `tools/init_diseno.py`, a partir de `DISENO.md` |
 | `experiencia.md`, `visual/` si aplican, y `diagramas/README.md` con fuentes .puml | Incorporación manual del paquete de diseño; ver [DISENAR.md](DISENAR.md#documentos-y-entrega-al-repo) |
 | `plan/backlog.md`, `plan/cobertura.md`, `plan/tareas/` | `tools/init_plan.py`, a partir del plan |
+| `comprobaciones.json` (en la raíz del repo): los comandos del proyecto, declarados una sola vez | T-001, al decidir el stack; los leen `tools/comprobar.py`, el CI y los bundles |
+| `.comprobaciones/` (en la raíz del repo; git la ignora) | `tools/comprobar.py`, un log por paso de cada ejecución |
 | `bundles/` (en la raíz del repo, no en `docs/`; git la ignora) | `tools/bundle.py`, un archivo por tarea |
 | `plan/ESTADO.md`, `plan/reportes/` (un reporte por tarea cerrada) y el índice de `decisiones/` (`decisiones/README.md`) | `tools/cerrar.py` |
 

@@ -6,7 +6,7 @@ Este archivo viaja dentro de cada bundle. Léelo completo antes de escribir nada
 
 Recibes un **bundle** con **una** tarea. Haces solo esa tarea y respondes con **tres bloques** (ver «Entrega»).
 
-El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usuario» · la tarjeta de la tarea · los documentos que la tarjeta manda leer · el contenido actual de los archivos de `Tocar:` que ya existen.
+El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usuario» · la tarjeta de la tarea · los documentos que la tarjeta manda leer, con estas reglas y, si el proyecto ya los declaró, sus comandos (`comprobaciones.json`) · el contenido actual de los archivos de `Tocar:` que ya existen.
 
 ## Reglas
 
@@ -123,12 +123,14 @@ La detección de tests de `bundle.py --parche2` y las guardas de tests de `cerra
 
 ## Comandos
 
-Los completa T-001 cuando el stack esté decidido. Para varios servicios, identifica directorio y comando por servicio, más el arranque y prueba integrados. Adapta el CI: un stack declarado obligatorio no se omite silenciosamente si falta su configuración. Hasta entonces, no inventes comandos.
+Los comandos del proyecto están declarados **una sola vez**, en `comprobaciones.json` de la raíz del repo: el mismo archivo que usa la persona y que usa el CI. Lo crea T-001 cuando el stack está decidido, y viaja en el bundle cuando ya existe. No uses otros comandos y no inventes ninguno: si falta el que necesitas, decláralo como bloqueo.
 
-- Instalar: *(pendiente)*
-- Arrancar: *(pendiente)*
-- Construir, si aplica: *(pendiente)*
-- Análisis estático, si aplica: *(pendiente)*
-- Tests, todos: *(pendiente)*
-- Tests de una ruta o módulo (el que usa la tarjeta, con la ruta como argumento): *(pendiente)*
+- Comprobar mientras trabajas: `python tools/comprobar.py rapido`
+- Comprobar antes de entregar: `python tools/comprobar.py entrega`
+- Probar solo la ruta de la tarjeta: `python tools/comprobar.py rapido --ruta «la ruta de la tarjeta»`
+- Ver qué comandos hay declarados: `python tools/comprobar.py --listar`
 - Activar el entorno virtual, si el stack usa uno: PowerShell `.venv\Scripts\Activate.ps1` · bash o zsh `source .venv/bin/activate`
+
+`comprobar.py` falla cuando un comando termina bien sin haber ejecutado ninguna prueba, porque «salió sin error» y «probó algo» no son lo mismo. No presentes como verde un paso que no probó nada, y no quites pruebas para que pase. Las suites largas no se vigilan con mensajes cada pocos segundos: las corre la persona o el CI, y tú recibes el resumen.
+
+T-001 declara ahí cada stack con su comando de pruebas y sus archivos de dependencias, los comandos de instalar y arrancar, el alcance de distribución y las plataformas; para varios servicios, el comando de cada uno más la prueba integrada. Un stack declarado no se omite silenciosamente si falta su configuración.

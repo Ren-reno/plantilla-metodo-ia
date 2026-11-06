@@ -846,7 +846,8 @@ class Escritura(unittest.TestCase):
 
     def test_toda_lectura_y_escritura_de_texto_declara_su_codificacion(self):
         # En Windows el predeterminado es cp1252 y falla con «·» y «»: nada debe depender de él.
-        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py"):
+        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py",
+                       "comprobar.py"):
             arbol = ast.parse((TOOLS / nombre).read_text(encoding="utf-8"))
             for nodo in ast.walk(arbol):
                 if not isinstance(nodo, ast.Call):

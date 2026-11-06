@@ -4,10 +4,15 @@
 #   1. Valida diseño y plan, si existen tools/validar.py y el backlog repartido.
 #   2. Prueba las herramientas de tools/, si existe tools/tests/.
 #   3. Instala dependencias, si existe requirements.txt.
-#   4. Corre los tests, si hay archivos test_*.py (o *_test.py) dentro de tests/.
+#   4. Comprueba el proyecto con tools/comprobar.py, si existe comprobaciones.json.
 #
 # Un paso omitido deja un aviso visible en la ejecución: un CI en verde NO significa
 # que algo se haya probado hasta que existan tests.
+#
+# El paso 4 no tiene su propia lista de comandos: los lee de comprobaciones.json, el
+# mismo archivo que usas tú y que usa el agente. Una sola definición por proyecto.
+# Y comprobar.py falla cuando un comando termina bien sin haber ejecutado pruebas:
+# «salió sin error» y «probó algo» no son lo mismo.
 #
 # T-001 (el esqueleto andante) adapta este archivo al stack de la app:
 # versión de Python, base de datos de prueba y comando de test.
@@ -72,14 +77,13 @@ jobs:
             echo "::notice::No hay requirements.txt: no se instaló nada."
           fi
 
-      - name: Correr tests
+      - name: Comprobar el proyecto
         run: |
-          if [ -n "$(find tests -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit 2>/dev/null)" ]; then
-            if ! python -m pytest --version >/dev/null 2>&1; then
-              echo "::error::Hay tests pero pytest no está instalado. Decláralo en requirements.txt o adapta este paso al stack (lo hace T-001)."
-              exit 1
-            fi
-            python -m pytest
+          if [ -f comprobaciones.json ]; then
+            python tools/comprobar.py entrega
+          elif [ -n "$(find tests -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit 2>/dev/null)" ]; then
+            echo "::error::Hay tests en tests/ pero no existe comprobaciones.json, así que el CI no sabe cuáles son los comandos del proyecto. Decláralos una sola vez: python tools/comprobar.py --ejemplo (lo hace T-001)."
+            exit 1
           else
-            echo "::warning::Todavía no hay tests en tests/: este paso no probó nada."
+            echo "::warning::Todavía no hay comprobaciones.json ni tests en tests/: este paso no probó nada."
           fi

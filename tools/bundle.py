@@ -43,6 +43,7 @@ import init_plan as ip     # para leer el backlog guardado
 MAX_KB = 60  # provisional: se calibra con la primera app real
 REL_TAREAS = "docs/plan/tareas"
 REL_LEEME = "docs/00-LEEME-IA.md"
+REL_COMPROBACIONES = "comprobaciones.json"
 CLAVES_ENTORNO = ("terminal", "carpeta_parches")
 
 RE_ID = re.compile(r"^(?:T|REF)-\d+$")
@@ -351,8 +352,11 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
                                  f"ciérrala con «python tools/cerrar.py {d} --hecha» (borra su tarjeta) antes de seguir. "
                                  "--forzar salta esta compuerta, bajo tu responsabilidad")
 
-    # --- documentos de «Leer:» (las reglas siempre primero)
-    items = [Item(REL_LEEME, "", "", None)] + [i for i in t.leer if i.ruta != REL_LEEME]
+    # --- documentos de «Leer:» (las reglas siempre primero, y con ellas los comandos del proyecto)
+    fijos = [Item(REL_LEEME, "", "", None)]
+    if REL_COMPROBACIONES in archivos:      # existe desde T-001: es la única definición de los comandos
+        fijos.append(Item(REL_COMPROBACIONES, "", "", None))
+    items = fijos + [i for i in t.leer if i.ruta not in (REL_LEEME, REL_COMPROBACIONES)]
     leer, vistos, por_crear = [], set(), []
     for it in items:
         encontrados = expandir(archivos, it.ruta)
@@ -453,7 +457,8 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
     p = [f"# Bundle de {t.id} · {t.titulo}\n",
          "Armado por `tools/bundle.py`. Trae, en este orden: el árbol del repo · el «Entorno del usuario» · la "
          "tarjeta · los documentos que la tarjeta manda leer · el contenido actual de los archivos de `Tocar:` que "
-         "ya existen. Empieza por las reglas de `docs/00-LEEME-IA.md` (van más abajo).\n"]
+         "ya existen. Empieza por las reglas de `docs/00-LEEME-IA.md` (van más abajo). Si el proyecto ya declaró "
+         "sus comandos, `comprobaciones.json` va con ellas: son los únicos comandos que existen.\n"]
     if parche2:
         p.append("**Modo estricto, parche 2.** Implementa la tarea. Los tests del parche 1 ya están en el repo: van "
                  "más abajo, y valen como `Leer:` y como `No tocar:` (no los modifiques).\n")
