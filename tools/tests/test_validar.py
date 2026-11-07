@@ -143,6 +143,31 @@ class TestValidadorBase(unittest.TestCase):
         val.cargar()
         return val.validar()
 
+    def poner_peso(self, peso, tid="T-002"):
+        """Añade (o reemplaza) la línea «Peso:» de una tarjeta y revalida."""
+        p = self.repo.dir / f"docs/plan/tareas/{tid}.md"
+        lineas = [l for l in p.read_text(encoding="utf-8").splitlines() if not l.startswith("Peso:")]
+        i = next(n for n, l in enumerate(lineas) if l.startswith("Estado:"))
+        lineas.insert(i + 1, f"Peso: {peso}")
+        p.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
+        val = va.Validador(self.repo.dir)
+        val.cargar()
+        return val.validar()
+
+    def test_dos_resultados_independientes_se_avisan(self):
+        errores, avisos = self.poner_peso("2 resultados · 1 frontera · 0 decisiones nuevas")
+        self.assertTrue(hay(avisos, "declara 2 resultados independientes"), avisos)
+        self.assertEqual(errores, [], "es aviso: partir o conservar la tarea lo decide la persona")
+
+    def test_un_solo_resultado_no_molesta(self):
+        _errores, avisos = self.poner_peso("1 resultado · sin fronteras nuevas · 0 decisiones")
+        self.assertFalse(hay(avisos, "resultados independientes"), avisos)
+
+    def test_sin_peso_declarado_no_se_avisa_nada(self):
+        # «Peso:» es opcional en esta versión: una tarjeta antigua sin él sigue valiendo.
+        _errores, avisos = self.val.validar()
+        self.assertFalse(hay(avisos, "resultados independientes"), avisos)
+
     def test_un_archivo_citado_que_no_existe_es_error_no_aviso(self):
         # bundle.py se niega a armar el bundle en este mismo caso: avisarlo aquí y dejar
         # pasar el CI solo retrasa el bloqueo hasta que alguien intenta trabajar.

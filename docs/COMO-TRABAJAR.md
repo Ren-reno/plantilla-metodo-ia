@@ -30,7 +30,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 | **Cambio** (remodelar una pieza) | Una funcionalidad nueva en una app que ya existe; un campo nuevo en una entidad cuenta como cambio | Un mini-diseño de una página (`docs/plantillas/cambio.md`; se guarda en `docs/cambios/`) y de 1 a 3 tarjetas |
 | **Rápido** (arreglar una gotera) | Un bug o un ajuste | Una tarjeta rápida (variante en `docs/plantillas/tarjeta.md`); un bug parte con su reproducción y evidencia; test primero cuando es automatizable |
 
-- **Regla de subida:** si una tarjeta de un camino liviano necesita más de 4 criterios o más de un módulo, el trabajo no era liviano: sube al camino siguiente. *Para qué:* un camino corto no debe servir para saltarse el rigor. Aunque el camino sea corto, cada tarea lleva su tarjeta, evidencia de aceptación y reporte; lo automatizable mantiene sus tests.
+- **Regla de subida:** si una tarjeta de un camino liviano necesita más de 4 criterios, más de un módulo o deja **dos resultados separables y verificables**, el trabajo no era liviano: sube al camino siguiente, o parte la tarea. La línea `Peso:` de la tarjeta es la que cuenta eso; el número de criterios por sí solo no mide esfuerzo, y se cumple comprimiendo varias comprobaciones en una viñeta. *Para qué:* un camino corto no debe servir para saltarse el rigor. Aunque el camino sea corto, cada tarea lleva su tarjeta, evidencia de aceptación y reporte; lo automatizable mantiene sus tests.
 - **Los documentos se mantienen vivos.** Si una tarea cambia el comportamiento, su parche actualiza también el RF o la sección de `docs/modelo.md` que corresponda (y el `.puml` si cambia el modelo), y esos archivos van en el `Tocar:` de la tarjeta. También se actualizan actores, permisos, experiencia, referencias visuales y diagramas cuando estén afectados. La versión vigente está en `docs/requisitos/`, `docs/modelo.md` y los complementos del repo; el `DISENO.md` original queda en `docs/archivo/` como foto histórica. *Para qué:* si nadie los actualiza, el mapa de lo que hace la app termina mintiendo.
 - **Las tarjetas se desechan al cerrar la tarea.** Su historia queda en git y en `docs/plan/reportes/`, y la traza «qué tarea cubre qué» queda en el backlog (o, en un cambio, en su mini-diseño).
 - **Una app que ya existe** (por ejemplo CrafTerraria): se documenta solo lo que se toca; el primer cambio sobre un área crea el RF o la sección de `modelo.md` de esa área. *(Pendiente: copiar el esqueleto del método a un repo que ya existe.)*
@@ -95,7 +95,7 @@ Textos para copiar y pegar. Si algo te cuesta entender, agrega: «explícame con
 
 **Diseño.** Adjunta tu problema, `docs/DISENAR.md` y `docs/plantillas/diseno.md`; añade los complementos aplicables o sus versiones vigentes:
 
-> Vamos a diseñar esta app siguiendo DISENAR.md. Primero aclara problema, actores y alcance; luego recorrido, experiencia y viabilidad. Pregunta hasta tres cosas por tanda (hasta cinco si están relacionadas). Separa hechos, supuestos y propuestas; usa los títulos exactos de diseno.md. Si hay UI, prepara EXPERIENCIA.md: podemos explorar imágenes con prompts autocontenidos y probar un prototipo según la interacción. Selecciona el inventario de diagramas. Antes del plan, revisa coherencia, pendientes y evidencia; presenta la versión y el alcance para confirmar. Devuelve los documentos actualizados al terminar cada sesión.
+> Vamos a diseñar esta app siguiendo DISENAR.md. Primero aclara problema y actores; después escribe la hipótesis (quién tiene el problema, cómo lo resuelve hoy, qué resultado observable indicaría que esto aporta valor) y elige el recorrido mínimo que la comprueba. Pregúntame también por el producto futuro, para ver pronto las decisiones caras, pero lo que no haga falta para comprobar la hipótesis va a «Diferido» con su motivo y no se escribe como RF. Luego recorrido, experiencia y viabilidad. Pregunta hasta tres cosas por tanda (hasta cinco si están relacionadas). Separa hechos, supuestos y propuestas; usa los títulos exactos de diseno.md. Si hay UI, prepara EXPERIENCIA.md: podemos explorar imágenes con prompts autocontenidos y probar un prototipo según la interacción. Selecciona el inventario de diagramas. Antes del plan, revisa coherencia, pendientes y evidencia; presenta la versión y el alcance para confirmar. Devuelve los documentos actualizados al terminar cada sesión.
 
 **Diagramas.** Adjunta las fuentes vigentes: diseño (o requisitos y modelo ya repartidos), experiencia si aplica e inventario con el formato de `docs/plantillas/inventario-diagramas.md`:
 
@@ -107,7 +107,8 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 
 > Con esto, arma el plan por olas, en un solo archivo `PLAN.md` con el formato de `plan.md`:
 >
-> - Backlog completo: todas las tareas, una línea cada una (ID, título, depende de, cubre), agrupadas en rebanadas verticales ordenadas por peso, riesgo y dependencias; cada rebanada deja algo ejecutable.
+> - Backlog completo del alcance aprobado: todas sus tareas, una línea cada una (ID, título, depende de, cubre), agrupadas en rebanadas verticales ordenadas por peso, riesgo y dependencias; cada rebanada deja algo ejecutable. Lo que el diseño dejó en «Diferido» **no entra en el backlog**: no tiene requisitos ni tareas todavía.
+> - La rebanada 1 es el recorrido mínimo de la hipótesis, entero y nada más que él. Si no cabe en una rebanada, dímelo antes de repartir el plan: o el recorrido es más grande de lo que parecía, o hay algo que puede diferirse.
 > - Matriz de cobertura sobre todo el backlog: cada criterio → RF → tareas, sin RF huérfanos ni tareas sin criterio.
 > - Tarjetas completas solo para la ola 1 (la primera rebanada), con el formato de `tarjeta.md`: máximo 4 criterios y un solo módulo propio por tarjeta. Las demás tareas se quedan como línea del backlog.
 > - Cada tarjeta lleva «Fuera de alcance». Para las reglas con números, fechas o dinero, propón 2 a 4 ejemplos aprobados (entrada → resultado esperado) para que yo los apruebe.
@@ -317,7 +318,7 @@ Si el código incumplía un requisito correcto, ese requisito se conserva. Si es
 
 - **Un chat por tarea** (y uno por hito). Cada mensaje hace que el LLM relea todo el chat: cuanto más largo, más cuesta. Si un chat se alarga, ciérralo y retoma con un bundle o un archivo nuevo.
 - **Máximo dos intentos por fallo.** Al segundo, el LLM debe parar y reportar qué probó; seguir insistiendo gasta sesión sin avanzar.
-- **Tareas chicas:** una sesión, hasta 4 criterios, un solo módulo propio.
+- **Tareas chicas:** una sesión, hasta 4 criterios, un solo módulo propio y un solo resultado verificable (la línea `Peso:` de la tarjeta).
 - **Decide pronto lo que afecta a otras tareas.** Un LLM que decide en silencio algo que toca otras tareas es la forma más fácil de que el proyecto se contradiga.
 - **Un error que se repite se arregla en el método, no en el chat.** Si el mismo problema aparece dos veces (en cualquier LLM), agrega una regla corta a `00-LEEME-IA.md` o, mejor, un chequeo a `tools/cerrar.py`. *Para qué:* el método mejora con el uso en vez de repetir fallos. Un chequeo automático pesa más que una regla escrita, porque los LLM a veces ignoran las reglas.
 

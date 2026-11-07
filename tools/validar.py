@@ -15,6 +15,8 @@ Comprueba:
        (no falta ni sobra ninguna relación criterio-RF-tarea).
     4. Tarjetas de docs/plan/tareas/:
        - Máximo de 4 criterios de aceptación (D16: si pasa de 4 sube de camino o debe partirse).
+       - «Peso:», si la tarjeta lo declara: avisa cuando declara dos o más resultados independientes,
+         porque la regla de partición dice partirla. Es aviso: partir o conservar lo decide la persona.
        - Campo «Fuera de alcance:» presente y explícito (D16).
        - Coherencia con el backlog («Depende de:» y «Cubre:» idénticos a los de su línea del backlog).
        - Archivos citados en «Leer:» existen con su grafía exacta, o indican «(lo produce T-xxx)».
@@ -59,6 +61,9 @@ RE_ADR_TOKEN = re.compile(r"^(?:docs/decisiones/)?(\d{4})-[a-z0-9\-]+\.md$")
 RE_ESTADO_ADR = re.compile(r"^Estado:\s*(\S+)")
 RE_SECCION_CRITERIOS_TARJETA = re.compile(r"^Criterios de aceptación\s*(?:\(→\s*tests\))?:")
 RE_SECCION_FUERA_ALCANCE = re.compile(r"^Fuera de alcance:\s*(.*)$")
+# «Peso:» cuenta resultados independientes. No mide esfuerzo por número de criterios, que se
+# cumple comprimiendo varias comprobaciones en una viñeta.
+RE_PESO_RESULTADOS = re.compile(r"(\d+)\s+resultados?\b", re.IGNORECASE)
 
 
 def normalizar_criterio(tok: str) -> str:
@@ -258,6 +263,7 @@ class Validador:
             depende: list[str] = []
             cubre: list[str] = []
             fuera_de_alcance: str | None = None
+            peso: str | None = None
             criterios: list[str] = []
             leer: list[str] = []
             tocar: list[str] = []
@@ -280,6 +286,8 @@ class Validador:
                                 cubre = [t.strip() for t in val.split(",") if t.strip()]
                 elif l_s.startswith("Fuera de alcance:"):
                     fuera_de_alcance = l_s[len("Fuera de alcance:"):].strip()
+                elif l_s.startswith("Peso:"):
+                    peso = l_s[len("Peso:"):].strip()
                 elif l_s.startswith("Leer (solo esto):"):
                     val = l_s[len("Leer (solo esto):"):].strip()
                     leer = [x.strip() for x in val.split(" · ") if x.strip()]
@@ -301,6 +309,7 @@ class Validador:
                 "depende": depende,
                 "cubre": cubre,
                 "fuera_de_alcance": fuera_de_alcance,
+                "peso": peso,
                 "criterios": criterios,
                 "leer": leer,
                 "tocar": tocar,
@@ -433,6 +442,15 @@ class Validador:
                 self.error(f"{tid}: tiene {num_crits} criterios de aceptación (el arnés fija un máximo de {MAX_CRITERIOS_TARJETA}; D16).")
             elif num_crits == 0:
                 self.error(f"{tid}: no tiene criterios de aceptación en su tarjeta.")
+
+            # 1b. «Peso:», si la tarjeta lo declara: dos resultados separables se parten
+            peso = t_card.get("peso")
+            if peso:
+                m_peso = RE_PESO_RESULTADOS.search(peso)
+                if m_peso and int(m_peso.group(1)) >= 2:
+                    self.aviso(f"{tid}: su «Peso:» declara {m_peso.group(1)} resultados independientes; "
+                               "la regla de partición dice partir la tarea, o explicar en el objetivo por qué "
+                               "conservarla entera.")
 
             # 2. Regla D16: Fuera de alcance obligatorio
             fa = t_card["fuera_de_alcance"]

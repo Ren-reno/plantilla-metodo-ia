@@ -4,8 +4,17 @@
   Este archivo trae tres formatos: la tarjeta normal (abajo), la variante «tarjeta rápida» (un bug o un ajuste) y la
   variante «tarjeta de refactor» (REF-NN). Usa solo el que corresponda.
 
-  - Tamaño: S = hasta 2 criterios y pocos archivos · M = 3 o 4 criterios en un solo módulo propio. Más que eso, se parte.
+  - Peso: cuatro señales que se cuentan, no una etiqueta. Resultados independientes verificables · fronteras o
+    integraciones que toca · decisiones nuevas que hay que tomar · si exige preparar entorno. El número de criterios
+    no mide esfuerzo: en el piloto, una tarjeta con cuatro criterios produjo 17 archivos y 898 inserciones porque
+    agrupaba servidor, configuración, dependencias, comandos, CI y convenciones.
+  - Regla de partición: con dos o más resultados separables y verificables, la tarea se parte. Si partirla
+    multiplicaría contratos, bundles y cierres sin beneficio, se conserva y se dice por qué en el objetivo.
+    Distingue una tarea fundacional de una funcionalidad pequeña recurrente: la primera es pesada una vez.
   - Criterios de aceptación: máximo 4. Cada uno indica su evidencia: test para lo automatizable; revisión visual o prueba de uso cuando corresponda. [verifica: CI] marca los que solo se comprueban en el CI de GitHub.
+  - Un criterio es UN comportamiento observable. Si una viñeta enumera comprobaciones distintas («valida esto,
+    aquello y lo otro»), son criterios distintos, y entonces la tarea pasa de cuatro y hay que partirla. Cumplir el
+    límite comprimiendo varias cosas en una viñeta ordena la prosa, no el trabajo.
   - Depende de: solo tareas. Las decisiones (ADR) se declaran en Leer: y actúan de compuerta: si cita un ADR no aceptado, la tarea espera.
   - Leer: todo archivo debe existir ya, o producirlo una tarea previa; indícalo así: (lo produce T-003).
   - Tocar: el * es recursivo. Si la tarea crea un módulo, lista el módulo completo y los archivos compartidos de
@@ -26,14 +35,17 @@
     falta de funcionalidad (no por un error de importación) y hace commit. 2) La implementación, con esos tests en
     Leer: y en No tocar:. Úsalo solo si hubo un primer fallo, si las reglas no caben en 2 a 4 ejemplos aprobados o si lo
     pide el usuario; no por «peso 5».
-  - Contrato, Produce, Modo y Ejemplos aprobados son opcionales: borra esas líneas si no aplican.
+  - Contrato, Produce, Modo y Ejemplos aprobados son opcionales: borra esas líneas si no aplican. Peso también lo
+    es, aunque conviene: ninguna herramienta lo exige, y una tarjeta antigua con «Tamaño: S» en vez de Peso sigue
+    funcionando, porque las herramientas ignoran esa parte de la línea de estado.
   - Entrega de una versión (etapa 5): es una tarjeta T-NNN normal, no hay prefijo nuevo. Sus criterios son los
     de la etapa que apliquen, con su evidencia: instalación desde un entorno limpio en las plataformas
     declaradas, datos de la versión anterior que siguen leyéndose, un fallo que se ve y se puede diagnosticar.
     El empaquetado y la migración son trabajo, así que van en su propia tarjeta, no de propina en otra.
 -->
 # T-«NNN» · «Título»
-Estado: pendiente · Tamaño: «S o M» · Depende de: «T-xxx, o —» · Cubre: «C1 (peso), RF-001»
+Estado: pendiente · Depende de: «T-xxx, o —» · Cubre: «C1 (peso), RF-001»
+Peso: «1 resultado · «n» fronteras: «cuáles» · «n» decisiones nuevas · «con o sin» preparación de entorno»
 Modo: «estricto, o borra esta línea»
 Objetivo: «una o dos frases»
 Contrato: «qué función de otro módulo llamas; si la pieza real aún no existe, qué stub usar»
@@ -64,7 +76,8 @@ Entrega: un parche (git diff) + reporte + comandos para aplicar
     correcto, conservar ese RF. Un reintento de una tarea abierta sigue en esa misma tarea.
 -->
 # T-«NNN» · «Título corto del bug o ajuste»
-Estado: pendiente · Tamaño: S · Depende de: «T-xxx, o —» · Cubre: «RF-001»
+Estado: pendiente · Depende de: «T-xxx, o —» · Cubre: «RF-001»
+Peso: «1 resultado · sin fronteras nuevas · 0 decisiones · sin preparación de entorno»
 Objetivo: «Bug o Ajuste: qué pasa hoy y qué debería pasar»
 Leer (solo esto): docs/00-LEEME-IA.md · «archivo donde ocurre» · «RF afectado»
 Tocar: «src/modulo/*» · «tests/modulo/*» · «docs/requisitos/RF-001-titulo.md (solo si cambia el comportamiento)»
@@ -86,7 +99,8 @@ Entrega: un parche (git diff) + reporte + comandos para aplicar
   - Criterio único: los tests no cambian y siguen verdes. cerrar.py rechaza cambios en tests bajo tests/. La detección actual no cubre tests colocados junto al código.
 -->
 # REF-«NN» · «Título»
-Estado: pendiente · Tamaño: S · Depende de: — · Cubre: — (ordena código; no agrega comportamiento)
+Estado: pendiente · Depende de: — · Cubre: — (ordena código; no agrega comportamiento)
+Peso: «0 resultados nuevos · 1 módulo · 0 decisiones · sin preparación de entorno»
 Objetivo: «qué se ordena y por qué (lo que señaló el chat de hito o validar.py)»
 Leer (solo esto): docs/00-LEEME-IA.md · «tests/modulo/* (solo para ver qué debe seguir pasando)»
 Tocar: «src/modulo/*»
