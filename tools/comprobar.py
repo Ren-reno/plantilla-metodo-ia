@@ -43,7 +43,8 @@ FRACASOS = (FALLO, TIMEOUT)
 
 PERFILES_POR_OMISION = {
     "rapido": ["plan", "pruebas"],
-    "entrega": ["plan", "pruebas", "dependencias", "comandos", "version", "plataformas", "licencia"],
+    "entrega": ["plan", "pruebas", "dependencias", "comandos", "version", "datos", "plataformas",
+                "licencia"],
 }
 
 # Para contar pruebas ejecutadas en la salida de los corredores más comunes.
@@ -72,6 +73,10 @@ EJEMPLO = """{
   "comandos": {
     "instalar": "python -m pip install -r requirements.txt",
     "arrancar": null
+  },
+  "datos": {
+    "version": 1,
+    "fixtures": "tests/fixtures/datos"
   },
   "excepciones": []
 }
@@ -130,6 +135,15 @@ def cargar_config(raiz: Path) -> dict:
         if not isinstance(pasos, list) or not all(isinstance(x, str) and x for x in pasos):
             raise ErrorDeUso(f"{REL_CONFIG}: el perfil «{nombre}» debe ser una lista de nombres de paso.")
     cfg["perfiles"] = perfiles
+
+    datos = cfg.get("datos")
+    if datos is not None:
+        if not isinstance(datos, dict) or not isinstance(datos.get("version"), int) \
+                or datos["version"] < 1 or not isinstance(datos.get("fixtures"), str) \
+                or not datos["fixtures"]:
+            raise ErrorDeUso(f"{REL_CONFIG}: «datos» necesita «version» (entero desde 1) y «fixtures» "
+                             '(carpeta con los datos de las versiones anteriores), por ejemplo '
+                             '{"version": 2, "fixtures": "tests/fixtures/datos"}.')
 
     for exc in cfg.get("excepciones", []):
         if not isinstance(exc, dict) or not exc.get("paso") or not exc.get("motivo"):
@@ -422,6 +436,54 @@ def paso_licencia(ctx: Contexto, _nombre: str) -> dict:
     return resultado("licencia", FALLO, "no hay archivo de licencia y el software se distribuye a otras personas")
 
 
+def paso_datos(ctx: Contexto, _nombre: str) -> dict:
+    """Que una versión nueva pueda leer los datos de la anterior.
+
+    No depende del alcance de distribución: perder tus propias notas al actualizar
+    es tan real como perder las de otra persona. Comprueba que existan datos de
+    ejemplo de cada versión anterior y que alguna prueba los use; eso no demuestra
+    que la migración sea correcta, solo que alguien la probó con datos viejos.
+    """
+    datos = ctx.cfg.get("datos")
+    if not datos:
+        return resultado("datos", OMITIDO, "el proyecto no declara la versión de sus datos: si guarda "
+                                           "algo que deba sobrevivir a una actualización, decláralo en «datos»")
+    version = datos["version"]
+    if version <= 1:
+        return resultado("datos", OK, "primera versión de los datos: todavía no hay nada que migrar")
+
+    rel_fix = datos["fixtures"]
+    carpeta = ctx.raiz / rel_fix
+    if not carpeta.is_dir():
+        return resultado("datos", FALLO, f"no existe {rel_fix}: sin datos de las versiones anteriores "
+                                         "no hay con qué comprobar una actualización")
+    faltan = [f"v{v}" for v in range(1, version) if not list(carpeta.glob(f"v{v}*"))]
+    if faltan:
+        return resultado("datos", FALLO, f"faltan datos de ejemplo de {', '.join(faltan)} en {rel_fix}: "
+                                         "una actualización que no se prueba con datos viejos es la "
+                                         "forma más fácil de perder los del usuario")
+    if not alguna_prueba_menciona(ctx.raiz, rel_fix):
+        return resultado("datos", FALLO, f"ninguna prueba de tests/ menciona {rel_fix}: los datos "
+                                         "viejos están, pero nadie los usa para comprobar la migración")
+    return resultado("datos", OK, f"datos en versión {version}, con ejemplos de las {version - 1} "
+                                  "anteriores usados por alguna prueba")
+
+
+def alguna_prueba_menciona(raiz: Path, texto: str) -> bool:
+    carpeta = raiz / "tests"
+    if not carpeta.is_dir():
+        return False
+    for p in carpeta.rglob("*"):
+        if not p.is_file() or p.suffix.lower() in (".pyc", ".png", ".jpg", ".zip", ".sqlite3"):
+            continue
+        try:
+            if texto in p.read_text(encoding="utf-8", errors="replace"):
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def paso_herramientas(ctx: Contexto, _nombre: str) -> dict:
     if not (ctx.raiz / "tools/tests").is_dir():
         return resultado("herramientas", OMITIDO, "no hay tools/tests en este repo")
@@ -440,6 +502,7 @@ PASOS = {
     "dependencias": paso_dependencias,
     "comandos": paso_comandos,
     "version": paso_version,
+    "datos": paso_datos,
     "plataformas": paso_plataformas,
     "licencia": paso_licencia,
     "herramientas": paso_herramientas,

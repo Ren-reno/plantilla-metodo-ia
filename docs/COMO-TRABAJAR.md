@@ -8,7 +8,7 @@ Piensa en construir una casa. Primero hablas con el arquitecto y quedan escritos
 
 Este repo es el **cuaderno de obra**: todo queda escrito aquí. Por eso puedes cambiar de LLM, o abrir un chat nuevo, sin explicar todo desde cero: el cuaderno ya lo dice.
 
-## Las 4 etapas
+## Las 5 etapas
 
 | Etapa | Qué haces tú | Qué queda en el repo |
 |---|---|---|
@@ -16,8 +16,9 @@ Este repo es el **cuaderno de obra**: todo queda escrito aquí. Por eso puedes c
 | 2. Diagramas | Eliges un inventario y revisas los diagramas necesarios para el alcance | `docs/diagramas/`, incluido su índice |
 | 3. Plan | Pides el plan por olas: la lista completa de tareas y tarjetas solo para la próxima ola | `docs/plan/backlog.md`, `docs/plan/cobertura.md` y `docs/plan/tareas/` |
 | 4. Código | Repites el ciclo de abajo, una tarea a la vez | Un parche por tarea y `docs/plan/ESTADO.md` |
+| 5. Entrega y operación | Publicas una versión que alguien pueda instalar y usar, y que no pierda sus datos | `comprobaciones.json`, datos de ejemplo de las versiones anteriores y notas de cambio |
 
-Las **decisiones** (`docs/decisiones/`) y los **tests** atraviesan las cuatro etapas.
+Las **decisiones** (`docs/decisiones/`) y los **tests** atraviesan las cinco etapas.
 
 ## Elegir el camino
 
@@ -25,7 +26,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 | Camino | Cuándo | Qué escribes |
 |---|---|---|
-| **Completo** (construir una casa) | App o módulo nuevo, o entidades y relaciones nuevas | Las 4 etapas |
+| **Completo** (construir una casa) | App o módulo nuevo, o entidades y relaciones nuevas | Las 5 etapas |
 | **Cambio** (remodelar una pieza) | Una funcionalidad nueva en una app que ya existe; un campo nuevo en una entidad cuenta como cambio | Un mini-diseño de una página (`docs/plantillas/cambio.md`; se guarda en `docs/cambios/`) y de 1 a 3 tarjetas |
 | **Rápido** (arreglar una gotera) | Un bug o un ajuste | Una tarjeta rápida (variante en `docs/plantillas/tarjeta.md`); un bug parte con su reproducción y evidencia; test primero cuando es automatizable |
 
@@ -254,6 +255,34 @@ Los tests pueden pasar y la app, aun así, no servir. Al terminar cada rebanada 
 - Si el LLM propone un refactor (una tarjeta `REF-NN`), se ejecuta como cualquier tarea, con la regla extra de que los tests no cambian y siguen verdes, **antes** de escribir las tarjetas de la ola siguiente. *Para qué:* así las tarjetas se escriben sobre un árbol ya ordenado y no sobre uno que va a cambiar. Cuando termine, vuelve al mismo chat con el `git ls-files` nuevo y pídele el paso 3.
 - Las tarjetas nuevas se reparten con `python tools/init_plan.py PLAN-ola2.md` (un archivo con solo `## Tarjetas de la ola 2`). *Para qué:* las verifica contra el backlog guardado y no pisa las tarjetas que ya existen.
 - Escribir las tarjetas de la ola siguiente es rutina. **Cambiar el backlog** (orden, dependencias, tareas nuevas) es replanificar: se guarda como un archivo nuevo, `PLAN-v2.md`, con las tres secciones, la versión siguiente y su `Motivo del cambio:` (formato en `docs/plantillas/plan.md`), y se reparte con `python tools/init_plan.py PLAN-v2.md`. *Para qué:* reemplaza `backlog.md` y `cobertura.md` por los nuevos y deja como están las tarjetas que ya existen.
+
+## Etapa 5: entrega, operación y distribución
+
+Las cuatro etapas anteriores terminan en «CI verde y tarea cerrada». Eso todavía no es software que alguien use: falta que arranque en una máquina que no es la tuya, que los datos sobrevivan a una actualización y que un fallo se pueda diagnosticar sin estar tú delante. *Para qué:* es la parte de la que depende que el software sea confiable con datos reales y con el tiempo, y es también donde el método se quedaba corto.
+
+Esta etapa **no va al final del proyecto**. Su alcance se declara en el diseño, porque cambia el plan (una migración o un empaquetado son tareas), y se ejerce en cada versión que publicas.
+
+**Primero, el alcance.** Lo declaras en el diseño y en `distribucion` de `comprobaciones.json`. Una herramienta personal no paga el coste de un producto distribuido:
+
+| Alcance | Cuándo | Qué exige, además de lo anterior |
+|---|---|---|
+| `solo-yo` | Solo tú, en tu máquina | Arranque reproducible · tus datos sobreviven a una actualización · un fallo se ve y se puede diagnosticar |
+| `mis-dispositivos` | La misma app en tu PC y en tu móvil | Versión de producto · identidad de cada dispositivo · qué pasa si dos copias cambian lo mismo |
+| `otras-personas` | Alguien más la instala | Empaquetado · plataformas verificadas, no supuestas · notas de cambio para quien la usa · licencia propia y de terceros · qué sale del equipo cuando hay red |
+
+**Las siete preguntas de la etapa.** Cada respuesta tiene un sitio; ninguna crea un documento nuevo.
+
+1. ¿Quién la instala, y en qué plataformas y versiones **exactas**? → `plataformas` de `comprobaciones.json` y la sección *Tecnología* del diseño.
+2. ¿Cómo se instala, y cómo se comprueba que quedó bien desde un entorno limpio? → `comandos` de `comprobaciones.json`; la instalación real la ejecuta el CI en cada plataforma declarada.
+3. ¿Qué versión es esta y qué cambió para quien la usa? → la versión en el manifiesto del stack, y las notas de cambio que salen de los reportes de las tareas cerradas.
+4. ¿Qué pasa con los datos al actualizar? → `datos` de `comprobaciones.json`: la versión de tus datos, y una carpeta con ejemplos de cada versión anterior que alguna prueba use. Respalda antes de migrar.
+5. ¿Cómo se ve y se diagnostica un fallo en una máquina ajena? → un registro en una ubicación conocida, un mensaje que diga qué hacer, y una forma de que te lo envíen.
+6. ¿Qué se expone cuando hay red? → una ADR **antes** del primer incremento con red: identidad de dispositivos, qué se sincroniza y qué no sale del equipo.
+7. ¿Qué licencia tiene lo tuyo y lo de terceros que distribuyes? → un archivo de licencia en la raíz.
+
+**Qué comprueba una máquina y qué no.** `python tools/comprobar.py entrega` comprueba las preguntas 1, 2, 3, 4 y 7, y falla cuando la respuesta es una promesa en vez de un hecho: una plataforma declarada que el CI no ejecuta, unos datos viejos que ninguna prueba usa, una licencia que no está. Las preguntas **5 y 6 no tienen comprobación automática**: la 5 depende de cada proyecto y la 6 es una decisión. No finjas que están cubiertas porque el ejecutor salió en verde.
+
+**La tarjeta de entrega** es una `T-NNN` normal, como los cambios visuales: no hay un prefijo nuevo. Sus criterios son los de arriba que apliquen, con su evidencia; y la prueba de uso de la rebanada se hace sobre la versión instalada, no sobre tu copia de desarrollo.
 
 ## Documentar correcciones
 

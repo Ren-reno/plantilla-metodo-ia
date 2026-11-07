@@ -293,6 +293,46 @@ class Pasos(unittest.TestCase):
         r = Repo(self, config(distribucion="solo-yo"))
         self.assertEqual(r.paso("version")["estado"], co.OMITIDO)
 
+    def test_sin_declarar_datos_se_omite_pero_lo_dice(self):
+        r = Repo(self, config())
+        res = r.paso("datos")
+        self.assertEqual(res["estado"], co.OMITIDO)
+        self.assertIn("sobrevivir a una actualización", res["detalle"])
+
+    def test_la_primera_version_de_los_datos_no_tiene_nada_que_migrar(self):
+        r = Repo(self, config(datos={"version": 1, "fixtures": "tests/fixtures/datos"}))
+        self.assertEqual(r.paso("datos")["estado"], co.OK)
+
+    def test_una_version_nueva_sin_datos_viejos_falla(self):
+        # Vale para solo-yo tambien: perder tus propias notas al actualizar es igual de real.
+        cfg = config(datos={"version": 2, "fixtures": "tests/fixtures/datos"})
+        r = Repo(self, cfg)
+        res = r.paso("datos")
+        self.assertEqual(res["estado"], co.FALLO)
+        self.assertIn("no existe tests/fixtures/datos", res["detalle"])
+
+        r.poner("tests/fixtures/datos/.gitkeep", "")
+        res = r.paso("datos")
+        self.assertEqual(res["estado"], co.FALLO)
+        self.assertIn("faltan datos de ejemplo de v1", res["detalle"])
+
+    def test_datos_viejos_que_ninguna_prueba_usa_no_comprueban_nada(self):
+        cfg = config(datos={"version": 2, "fixtures": "tests/fixtures/datos"})
+        r = Repo(self, cfg)
+        r.poner("tests/fixtures/datos/v1.json", '{"schema_version": 1}\n')
+        res = r.paso("datos")
+        self.assertEqual(res["estado"], co.FALLO)
+        self.assertIn("ninguna prueba", res["detalle"])
+
+        r.poner("tests/test_migracion.py", "RUTA = 'tests/fixtures/datos'\n")
+        self.assertEqual(r.paso("datos")["estado"], co.OK)
+
+    def test_datos_mal_declarados_se_rechazan(self):
+        r = Repo(self, config(datos={"version": 0, "fixtures": "x"}))
+        self.assertIn("«datos» necesita", r.correr("rapido").stdout)
+        r.config(config(datos={"version": 2}))
+        self.assertIn("«datos» necesita", r.correr("rapido").stdout)
+
     def test_ruta_prueba_solo_lo_que_pide_la_tarjeta(self):
         cfg = config(stacks={"python": {"pruebas": UNITTEST,
                                         "pruebas_una": ["python", "-B", "-m", "unittest", "discover",

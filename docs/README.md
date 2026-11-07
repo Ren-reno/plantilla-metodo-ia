@@ -6,6 +6,7 @@ Si necesitas saber **X**, mira **Y**:
 |---|---|
 | Cómo usar las siete herramientas y entender sus códigos de salida | `../tools/README.md` |
 | Qué comandos tiene el proyecto y qué se comprueba antes de entregar | `../comprobaciones.json` y `../tools/README.md` |
+| Quién va a instalar esto y qué exige entregarlo | La etapa 5 de [COMO-TRABAJAR.md](COMO-TRABAJAR.md) |
 | Cómo diseñar antes de planificar | [DISENAR.md](DISENAR.md) |
 | Actores, roles y permisos | Sección Actores de `requisitos/contexto.md` |
 | Pantallas, navegación, estilo y evidencia de uso | `experiencia.md` y referencias en `visual/`, si hay UI |

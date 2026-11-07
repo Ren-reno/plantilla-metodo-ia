@@ -100,6 +100,11 @@ Criterios de aceptación:
 «Stack y decisiones que condicionan el primer incremento.»
 
 - Ejecución y operación mínima: «dónde corre, cómo arrancar y comprobar; despliegue y recuperación si aplica»
+- Entrega y distribución (etapa 5 de la guía de trabajo): «quién instala esto: solo yo / mis dispositivos / otras personas»
+  - Plataformas y versiones exactas: «las que se van a verificar, no las que se suponen»
+  - Datos que deben sobrevivir a una actualización: «qué se guarda, con qué versión, y qué migración hará falta; o No aplica si no se guarda nada»
+  - Cuando haya red: «qué sale del equipo, qué identifica a cada dispositivo y qué pasa si dos copias cambian lo mismo; va como ADR antes de ese incremento»
+  - Licencia propia y de terceros, si se distribuye: «cuál»
 - Convenciones previstas: «estructura, comandos por servicio, idioma y formato de docstrings según el stack; T-001 los concreta»
 - Experiencia: «EXPERIENCIA.md durante diseño → docs/experiencia.md al incorporar; o No aplica con motivo»
 - Diagramas: «inventario diagramas/README.md → docs/diagramas/README.md; tipos elegidos y omitidos con motivo»
