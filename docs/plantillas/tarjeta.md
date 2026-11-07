@@ -27,6 +27,10 @@
     Leer: y en No tocar:. Úsalo solo si hubo un primer fallo, si las reglas no caben en 2 a 4 ejemplos aprobados o si lo
     pide el usuario; no por «peso 5».
   - Contrato, Produce, Modo y Ejemplos aprobados son opcionales: borra esas líneas si no aplican.
+  - Entrega de una versión (etapa 5): es una tarjeta T-NNN normal, no hay prefijo nuevo. Sus criterios son los
+    de la etapa que apliquen, con su evidencia: instalación desde un entorno limpio en las plataformas
+    declaradas, datos de la versión anterior que siguen leyéndose, un fallo que se ve y se puede diagnosticar.
+    El empaquetado y la migración son trabajo, así que van en su propia tarjeta, no de propina en otra.
 -->
 # T-«NNN» · «Título»
 Estado: pendiente · Tamaño: «S o M» · Depende de: «T-xxx, o —» · Cubre: «C1 (peso), RF-001»

@@ -464,6 +464,63 @@ class Banderas(unittest.TestCase):
             self.assertEqual((c.escrituras, c.borrar), ([], []))
 
 
+# ---- la guía de tres líneas de ESTADO.md -------------------------------------------------------
+class GuiaDeEstado(unittest.TestCase):
+    """Responde «¿y ahora qué?» sin reconstruir la conversación (H-01), sin otro archivo (H-24)."""
+
+    def test_tras_el_cierre_provisorio_apunta_al_CI_y_al_cierre_definitivo(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        r.aplicar(r.cerrar())
+        texto = r.leer(ce.REL_ESTADO)
+        self.assertIn("- **Etapa:** 4. Código", texto)
+        self.assertIn("cerrar.py T-001 --hecha", texto)
+        self.assertIn("- **Tu decisión:** ninguna", texto)
+
+    def test_tras_cerrar_del_todo_apunta_a_la_siguiente_tarea_desbloqueada(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        r.aplicar(r.cerrar())
+        r.aplicar(ce.planear(r.dir, "T-001", hecha=True))
+        texto = r.leer(ce.REL_ESTADO)
+        self.assertIn("bundle.py T-002", texto)
+
+    def test_una_tarea_desbloqueada_sin_tarjeta_manda_al_chat_de_hito(self):
+        r = Repo(self)
+        (r.dir / "docs/plan/tareas/T-002.md").unlink()
+        r.trabajo_de_t001()
+        r.aplicar(r.cerrar())
+        r.aplicar(ce.planear(r.dir, "T-001", hecha=True))
+        self.assertIn("no tiene tarjeta", r.leer(ce.REL_ESTADO))
+
+    def test_el_parche_1_del_modo_estricto_apunta_al_parche_2(self):
+        r = Repo(self)
+        r.poner("docs/plan/tareas/T-001.md",
+                REPARTO_PLAN["docs/plan/tareas/T-001.md"].replace("Objetivo:", "Modo: estricto\nObjetivo:"))
+        r.trabajo({"tests/test_humo.py": "def test_humo(): pass\n"}, "test: parche 1")
+        r.aplicar(r.cerrar(parcial=True))
+        self.assertIn("bundle.py T-001 --parche2", r.leer(ce.REL_ESTADO))
+
+    def test_una_decision_en_propuesta_se_nombra_porque_bloquea_el_bundle(self):
+        r = Repo(self)
+        r.poner("docs/decisiones/0002-interfaz-web-sencilla-sin-app-movil.md",
+                adr("0002", "propuesta", "Interfaz web"))
+        r.trabajo_de_t001()
+        r.aplicar(r.cerrar())
+        texto = r.leer(ce.REL_ESTADO)
+        self.assertIn("ADR-0002", texto)
+        self.assertIn("bundle.py se niega", texto)
+
+    def test_la_guia_no_rompe_la_lectura_del_estado(self):
+        orden, filas = ["T-001"], {"T-001": ce.fila_nueva()}
+        guia = ["- **Etapa:** 4. Código", "- **Siguiente:** «python tools/bundle.py T-002»",
+                "- **Tu decisión:** ninguna"]
+        texto = ce.escribir_estado("x", orden, filas, guia)
+        self.assertEqual(ce.leer_estado(texto), (orden, filas))
+        self.assertIn("**Siguiente:**", texto)
+        self.assertNotIn("|", "\n".join(guia), "una guía con «|» la leería como fila de la tabla")
+
+
 # ---- ESTADO.md y los estados ------------------------------------------------------------------
 class EstadoDelPlan(unittest.TestCase):
     def test_se_escribe_y_se_lee_de_vuelta(self):
@@ -846,7 +903,8 @@ class Escritura(unittest.TestCase):
 
     def test_toda_lectura_y_escritura_de_texto_declara_su_codificacion(self):
         # En Windows el predeterminado es cp1252 y falla con «·» y «»: nada debe depender de él.
-        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py"):
+        for nombre in ("init_diseno.py", "init_plan.py", "bundle.py", "cerrar.py", "validar.py",
+                       "comprobar.py"):
             arbol = ast.parse((TOOLS / nombre).read_text(encoding="utf-8"))
             for nodo in ast.walk(arbol):
                 if not isinstance(nodo, ast.Call):
