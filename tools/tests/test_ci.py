@@ -85,6 +85,45 @@ class TestIntegracionCI(unittest.TestCase):
 
 
 @unittest.skipUnless(BASH, "se necesita Bash para ejecutar el bloque del CI")
+class TestProbarLasHerramientas(unittest.TestCase):
+    """El CI de un proyecto prueba el proyecto; las pruebas del método son de la plantilla."""
+
+    PRUEBA = ("import unittest\n\n\nclass T(unittest.TestCase):\n"
+              "    def test_ok(self):\n        self.assertTrue(True)\n")
+
+    def setUp(self):
+        self.repo = RepoTemporal(self)
+        self.script = bloque("Probar las herramientas de tools/")
+
+    def correr_ci(self):
+        entorno = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+        entorno["PATH"] = str(Path(sys.executable).parent) + os.pathsep + entorno.get("PATH", "")
+        return subprocess.run([BASH, "--noprofile", "--norc", "-e", "-c", self.script],
+                              cwd=str(self.repo.dir), env=entorno, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+
+    def test_en_la_plantilla_las_pruebas_del_metodo_siguen_corriendo(self):
+        self.repo.poner("tools/tests/test_falso.py", self.PRUEBA)
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Ran 1 test", r.stdout + r.stderr)
+
+    def test_en_un_proyecto_ya_arrancado_no_corren(self):
+        self.repo.poner("tools/tests/test_falso.py", self.PRUEBA)
+        self.repo.poner("comprobaciones.json", '{"version": 1, "distribucion": "solo-yo"}\n')
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("Ran 1 test", r.stdout + r.stderr)
+        self.assertIn("::notice::", r.stdout)
+        self.assertIn("herramientas", r.stdout)
+
+    def test_sin_tools_tests_conserva_el_aviso_original(self):
+        r = self.correr_ci()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("No hay tools/tests", r.stdout)
+
+
+@unittest.skipUnless(BASH, "se necesita Bash para ejecutar el bloque del CI")
 class TestComprobarElProyecto(unittest.TestCase):
     """El paso que comprueba el proyecto: lee los comandos de comprobaciones.json, no los trae."""
 

@@ -38,7 +38,9 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 Las siete herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py`, `validar.py` y `comprobar.py`. Sus opciones están en `tools/README.md`. El ciclo completo se recorrió una vez en un piloto; una vez no valida el método. El mini-diseño de cambios sigue siendo un documento manual; no hay instalador del método para repos existentes.
 
-El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores; las pruebas de `tools/` corren igualmente. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
+El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
+
+Las pruebas de las herramientas corren mientras tu repo todavía no tiene `comprobaciones.json`, es decir antes de T-001. Después no: **el CI de tu proyecto prueba tu proyecto, no el método**. Las de `tools/` viven en el repo de la plantilla y ahí siguen corriendo. *Para qué:* en el piloto el CI ejecutaba 388 pruebas del método frente a 13 de la app, y esa suite era además la espera más larga del ciclo en Windows. Si en algún momento cambias algo de `tools/`, añade el paso `herramientas` al perfil de entrega de tu `comprobaciones.json` y vuelven a correr aquí.
 
 ## Empezar una app nueva
 

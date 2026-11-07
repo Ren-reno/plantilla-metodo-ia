@@ -162,6 +162,26 @@ class TestValidadorBase(unittest.TestCase):
         errores, _ = self.citar_en_tarjeta("docs/EXPERIENCIA.md")
         self.assertFalse(hay(errores, "EXPERIENCIA"), errores)
 
+    def test_citar_una_decision_reemplazada_es_error(self):
+        # bundle.py también se niega. A diferencia de «propuesta», aquí no hay nada
+        # pendiente de decidir: la tarjeta cita una decisión sustituida (H-13).
+        adr = sorted((self.repo.dir / "docs/decisiones").glob("0*.md"))[0]
+        texto = adr.read_text(encoding="utf-8")
+        adr.write_text(texto.replace("Estado: propuesta", "Estado: reemplazada")
+                            .replace("Estado: aceptada", "Estado: reemplazada"),
+                       encoding="utf-8", newline="\n")
+        errores, _ = self.citar_en_tarjeta(f"docs/decisiones/{adr.name}")
+        self.assertTrue(hay(errores, "está «reemplazada»"), errores)
+
+    def test_una_decision_en_propuesta_sigue_siendo_solo_aviso(self):
+        adr = sorted((self.repo.dir / "docs/decisiones").glob("0*.md"))[0]
+        texto = adr.read_text(encoding="utf-8")
+        adr.write_text(texto.replace("Estado: aceptada", "Estado: propuesta"),
+                       encoding="utf-8", newline="\n")
+        errores, avisos = self.citar_en_tarjeta(f"docs/decisiones/{adr.name}")
+        self.assertFalse(hay(errores, adr.name), errores)
+        self.assertTrue(hay(avisos, "«propuesta»"), avisos)
+
     def test_un_archivo_que_produce_otra_tarea_sigue_exento(self):
         errores, _ = self.citar_en_tarjeta("docs/contratos/futuro.md (lo produce T-001)")
         self.assertFalse(hay(errores, "futuro.md"), errores)

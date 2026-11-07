@@ -20,7 +20,7 @@ Si necesitas saber **X**, mira **Y**:
 | Qué tareas forman el plan y qué cubre cada una | `plan/backlog.md` y `plan/cobertura.md` |
 | Cómo escribir código y qué comandos usar | `00-LEEME-IA.md` |
 | Cómo trabajar con este repo (guía para ti) | `COMO-TRABAJAR.md` |
-| Los formatos en blanco (diseño, experiencia, inventario de diagramas, plan, tarjeta, ADR, reporte, cambio) | `plantillas/` |
+| Los formatos en blanco (diseño, experiencia, inventario de diagramas, plan, tarjeta, ADR, contrato, reporte, cambio) | `plantillas/` |
 | El diseño original, antes de repartirlo | `archivo/` (solo histórico) |
 
 ## Qué aparece y cuándo

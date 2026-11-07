@@ -10,7 +10,7 @@
 -->
 # ADR-«NNNN» · «Título corto de la decisión»
 
-Estado: propuesta · Motivo: «por qué se elige esto y no otra cosa» · Afecta: «módulos, tareas o documentos que toca»
+Estado: propuesta · Motivo: «por qué se elige esto y no otra cosa» · Afecta: «módulos, tareas o documentos que toca, con su ruta o ID concretos: al reemplazar esta decisión, esta es la lista de lo que hay que revisar»
 
 <!-- Opcional: solo si este ADR reemplaza a otro. -->
 Reemplaza a: ADR-«NNNN»

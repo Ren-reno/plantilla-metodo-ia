@@ -20,7 +20,8 @@ Comprueba:
        - Archivos citados en «Leer:» existen con su grafía exacta, o indican «(lo produce T-xxx)».
          Es error, no aviso: bundle.py se niega en el mismo caso. La grafía se compara con el
          disco porque Windows no distingue mayúsculas y el CI en Linux sí.
-       - ADRs citados existen; si están en estado «propuesta», avisa que bloquean bundle.py (D14).
+       - ADRs citados existen; si están en «propuesta», avisa que bloquean bundle.py (D14); si están
+         «reemplazada», es error: ahí no hay nada que decidir, la tarjeta cita una decisión sustituida.
        - En tarjetas REF-NN: solo tocan código (nunca tests ni docs).
     5. Estructura y alertas de refactor (D37): avisa si hay archivos de código muy grandes (>500 líneas)
        como candidatos a evaluar en el chat de hito.
@@ -478,7 +479,13 @@ class Validador:
                     if num_adr not in self.adrs_diseno:
                         self.error(f"{tid}: cita en «Leer:» el ADR-{num_adr}, pero no existe archivo correspondiente en docs/decisiones/.")
                     elif self.adrs_diseno[num_adr] == "propuesta":
+                        # Aviso, no error: aceptar una decisión es tuyo y el plan puede validarse antes.
                         self.aviso(f"{tid}: cita en «Leer:» el ADR-{num_adr} que está en estado «propuesta» (bloqueará bundle.py; D14).")
+                    elif self.adrs_diseno[num_adr] == "reemplazada":
+                        # Error: aquí no hay nada pendiente de decidir, la tarjeta cita una
+                        # decisión sustituida. bundle.py también se niega (D14).
+                        self.error(f"{tid}: cita en «Leer:» el ADR-{num_adr}, que está «reemplazada»: "
+                                   "debe citar la decisión que la reemplaza (bundle.py se negará a armar su bundle).")
                 elif "(lo produce T-" not in item:
                     # Archivo general. Es error, no aviso: bundle.py se niega a armar el bundle
                     # en este mismo caso, así que avisarlo aquí y dejar pasar el CI solo retrasa
