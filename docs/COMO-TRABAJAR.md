@@ -8,7 +8,7 @@ Piensa en construir una casa. Primero hablas con el arquitecto y quedan escritos
 
 Este repo es el **cuaderno de obra**: todo queda escrito aquí. Por eso puedes cambiar de LLM, o abrir un chat nuevo, sin explicar todo desde cero: el cuaderno ya lo dice.
 
-## Las 4 etapas
+## Las 5 etapas
 
 | Etapa | Qué haces tú | Qué queda en el repo |
 |---|---|---|
@@ -16,8 +16,9 @@ Este repo es el **cuaderno de obra**: todo queda escrito aquí. Por eso puedes c
 | 2. Diagramas | Eliges un inventario y revisas los diagramas necesarios para el alcance | `docs/diagramas/`, incluido su índice |
 | 3. Plan | Pides el plan por olas: la lista completa de tareas y tarjetas solo para la próxima ola | `docs/plan/backlog.md`, `docs/plan/cobertura.md` y `docs/plan/tareas/` |
 | 4. Código | Repites el ciclo de abajo, una tarea a la vez | Un parche por tarea y `docs/plan/ESTADO.md` |
+| 5. Entrega y operación | Publicas una versión que alguien pueda instalar y usar, y que no pierda sus datos | `comprobaciones.json`, datos de ejemplo de las versiones anteriores y notas de cambio |
 
-Las **decisiones** (`docs/decisiones/`) y los **tests** atraviesan las cuatro etapas.
+Las **decisiones** (`docs/decisiones/`) y los **tests** atraviesan las cinco etapas.
 
 ## Elegir el camino
 
@@ -25,7 +26,7 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 
 | Camino | Cuándo | Qué escribes |
 |---|---|---|
-| **Completo** (construir una casa) | App o módulo nuevo, o entidades y relaciones nuevas | Las 4 etapas |
+| **Completo** (construir una casa) | App o módulo nuevo, o entidades y relaciones nuevas | Las 5 etapas |
 | **Cambio** (remodelar una pieza) | Una funcionalidad nueva en una app que ya existe; un campo nuevo en una entidad cuenta como cambio | Un mini-diseño de una página (`docs/plantillas/cambio.md`; se guarda en `docs/cambios/`) y de 1 a 3 tarjetas |
 | **Rápido** (arreglar una gotera) | Un bug o un ajuste | Una tarjeta rápida (variante en `docs/plantillas/tarjeta.md`); un bug parte con su reproducción y evidencia; test primero cuando es automatizable |
 
@@ -34,11 +35,24 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 - **Las tarjetas se desechan al cerrar la tarea.** Su historia queda en git y en `docs/plan/reportes/`, y la traza «qué tarea cubre qué» queda en el backlog (o, en un cambio, en su mini-diseño).
 - **Una app que ya existe** (por ejemplo CrafTerraria): se documenta solo lo que se toca; el primer cambio sobre un área crea el RF o la sección de `modelo.md` de esa área. *(Pendiente: copiar el esqueleto del método a un repo que ya existe.)*
 
+## Elegir el perfil
+
+El camino dice **cuánto proceso** lleva el trabajo. El perfil dice **quién lo ejecuta**, y es una pregunta aparte:
+
+| Perfil | Cuándo | Qué cambia |
+|---|---|---|
+| `chat-web` | Pegas el bundle en una conversación que no ve tu repo | Te devuelve parche, reporte y comandos listos para pegar; tú los ejecutas |
+| `agente` | El LLM tiene acceso a tu repo y a tu terminal | Edita en local y te deja un diff, el reporte y la evidencia de lo que corrió; no te pide que copies comandos que él puede ejecutar |
+
+Lo declaras una vez en `~/.metodo-ia.json` (`"perfil": "chat-web"` o `"agente"`); `bundle.py` mete en cada bundle el anexo que toca, y sin declararlo asume `chat-web`, que es el que no supone ningún acceso. *Para qué:* el método, la evidencia y el cierre son los mismos en los dos; lo único que cambia es cómo llega el trabajo. Antes solo estaba escrito el flujo de chat, y un agente tenía que fingir que era un chat: producía un parche y un bloque de comandos para que otro los aplicara, teniendo la terminal delante.
+
 ## Qué funciona hoy y qué falta
 
-Las seis herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py` y `validar.py`. Sus opciones están en `tools/README.md`. Falta probar el ciclo completo con una app real. El mini-diseño de cambios sigue siendo un documento manual; no hay instalador del método para repos existentes.
+Las siete herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py`, `validar.py` y `comprobar.py`. Sus opciones están en `tools/README.md`. El ciclo completo se recorrió una vez en un piloto; una vez no valida el método. El mini-diseño de cambios sigue siendo un documento manual; no hay instalador del método para repos existentes.
 
-El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores; las pruebas de `tools/` corren igualmente. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
+El CI omite la validación cruzada con un aviso mientras no existan `tools/validar.py` o `docs/plan/backlog.md`. Así se puede guardar el diseño antes de planificar. Con backlog, ejecuta el validador y propaga sus errores. Ejecutar `validar.py` a mano sin backlog sigue devolviendo 2.
+
+Las pruebas de las herramientas corren mientras tu repo todavía no tiene `comprobaciones.json`, es decir antes de T-001. Después no: **el CI de tu proyecto prueba tu proyecto, no el método**. Las de `tools/` viven en el repo de la plantilla y ahí siguen corriendo. *Para qué:* en el piloto el CI ejecutaba 388 pruebas del método frente a 13 de la app, y esa suite era además la espera más larga del ciclo en Windows. Si en algún momento cambias algo de `tools/`, añade el paso `herramientas` al perfil de entrega de tu `comprobaciones.json` y vuelven a correr aquí.
 
 ## Empezar una app nueva
 
@@ -99,7 +113,7 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 > - Cada tarjeta lleva «Fuera de alcance». Para las reglas con números, fechas o dinero, propón 2 a 4 ejemplos aprobados (entrada → resultado esperado) para que yo los apruebe.
 > - Antes de T-001, registra como ADR las decisiones que arrastra el stack (base de datos local, versión mínima del lenguaje).
 > - En UI, las tarjetas citan experiencia y referencias; cada criterio indica evidencia. Preparar el layout compartido en T-001 si cabe, o en una tarea fundacional antes de las pantallas. Los bloqueos compartidos se resuelven con tareas y dependencias explícitas.
-> - T-001 es el esqueleto andante: la app arranca, un test pasa y el CI corre. También completa las secciones *Convenciones* y *Comandos* de `docs/00-LEEME-IA.md` y adapta `.github/workflows/ci.yml` al stack, con build si aplica. Define idioma y formato de docstrings con un ejemplo; en varios servicios identifica sus comandos y la comprobación integrada.
+> - T-001 es el esqueleto andante: la app arranca, un test pasa y el CI corre. También crea `comprobaciones.json` con los comandos del proyecto (un stack por lenguaje con su comando de pruebas y sus archivos de dependencias, instalar y arrancar, alcance de distribución y plataformas), completa la sección *Convenciones* de `docs/00-LEEME-IA.md` y adapta `.github/workflows/ci.yml` al stack, con build si aplica. Define idioma y formato de docstrings con un ejemplo; en varios servicios identifica sus comandos y la comprobación integrada.
 > - Hito mínimo = el flujo ejecutable más corto de punta a punta; después, el entregable completo.
 > - Entre módulos, contratos con stub. Para lo incierto, exploraciones con tiempo acotado.
 >
@@ -115,7 +129,9 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 
 **Tarea.** Pega el bundle debajo de este texto:
 
-> Implementa la tarea de este bundle siguiendo las reglas de `00-LEEME-IA.md`. Responde solo con los tres bloques: parche, reporte y comandos.
+> Implementa la tarea de este bundle siguiendo las reglas de `00-LEEME-IA.md` y entregando como dice el anexo de perfil que viene con ellas.
+
+(En `chat-web` eso son los tres bloques: parche, reporte y comandos. En `agente`, los cambios aplicados con su diff, el reporte y la evidencia de lo que ejecutó.)
 
 **Tarea en modo estricto** (la tarjeta dice `Modo: estricto`; la explicación está más abajo). Pega el bundle debajo de uno de estos textos, según la fase. En la fase 2, arma el bundle con `python tools/bundle.py T-007 --parche2`: suma los tests del parche 1.
 
@@ -142,11 +158,13 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 1. **Preparar:** `python tools/bundle.py T-007`. *Para qué:* arma un solo archivo, `bundles/T-007.md`, con lo justo que el LLM necesita; así gasta pocos tokens y no se confunde. Ábrelo, copia todo su contenido y pégalo en el LLM. Si se niega a armarlo, te dice por qué (todos los motivos juntos). Lo más común es que la tarea cite una decisión que aún no aceptaste (acéptala primero: cambia su línea `Estado: propuesta` por `Estado: aceptada` y haz commit) o que una tarea anterior siga sin cerrarse. La primera vez, crea `~/.metodo-ia.json` con tu terminal y tu carpeta de parches (la línea para hacerlo está en `tools/README.md`); si no existe, el LLM te las preguntará.
 2. **Implementar:** pega el bundle en el LLM que prefieras. Te devuelve **tres bloques**: un parche, un reporte y los comandos.
 3. **Aplicar:** guarda el parche en Descargas y pega el bloque de comandos (explicado abajo). *Para qué:* el bloque prueba el parche, lo aplica, corre los tests y recién entonces guarda y sube.
-4. **Verificar:** los tests corren en tu computador antes del commit; el bloque de comandos ya los incluye y, si fallan, se detiene sin guardar nada. El CI de GitHub es la red de seguridad, no la primera prueba.
+4. **Verificar:** los tests corren en tu computador antes del commit; el bloque de comandos ya los incluye y, si fallan, se detiene sin guardar nada. Antes de cerrar, `python tools/comprobar.py entrega` repasa todo lo declarado del proyecto: pruebas que de verdad corrieron, dependencias fijadas, comandos documentados que existen y, si el software se distribuye, versión, plataformas y licencia. *Para qué:* un comando que sale sin error no demuestra que se haya probado algo; esa diferencia produjo cinco entregas en verde que eran falsas. El CI de GitHub es la red de seguridad, no la primera prueba.
 5. **Cerrar (recepción provisoria):** `python tools/cerrar.py T-007 reporte.md --llm Claude`. *Para qué:* es el inspector que recibe la obra. Revisa que el reporte esté completo, mira qué archivos cambió el commit (el bloque de comandos ya lo hizo) y te avisa de lo raro: archivos fuera de `Tocar:`, dependencias nuevas, tests antiguos modificados, cambios en contratos. Guarda el reporte en `docs/plan/reportes/` (si estaba en la raíz del repo, lo mueve; si estaba en otra carpeta, lo copia), actualiza `ESTADO.md` y convierte las decisiones que afectan a otras tareas en propuestas de ADR. La tarea queda «en revisión». Si el reporte tiene errores, te dice cuáles y no escribe nada; con `--check` solo ensaya. Si es un segundo intento (por ejemplo, el CI falló y lo corregiste), agrega `--reintento`.
 6. **Decidir y cerrar del todo (recepción definitiva):** revisa con `git diff` y acepta o rechaza las propuestas de ADR (para aceptar una, cambia su línea `Estado: propuesta` por `Estado: aceptada`). Cuando el CI de GitHub salga en verde y se hayan completado las comprobaciones de aceptación exigidas (incluida revisión de UI o uso), corre `python tools/cerrar.py T-007 --hecha`. El script no consulta el CI ni verifica aprobación visual por sí solo. *Para qué:* «hecha» significa línea base en verde, y eso solo lo sabes tú al mirar el CI. El comando deja la tarea «hecha», borra su tarjeta de `docs/plan/tareas/` con un borrado normal (sin `git rm`) y te dice qué tareas quedaron desbloqueadas. Después haces **un** commit con todo el cierre (`ESTADO.md`, el reporte, las decisiones y la tarjeta borrada): su historia queda en git y en los reportes.
 
 Si la tarjeta dice `Modo: estricto`, la tarea son dos parches: mira «Modo estricto» más abajo.
+
+**Si te pierdes en cualquier punto del ciclo, abre `docs/plan/ESTADO.md`.** Sus tres primeras líneas dicen en qué etapa estás, cuál es el siguiente comando exacto y qué decisión está esperándote. Las escribe `cerrar.py` con cada cierre, a partir de lo que ya hay en el repo. *Para qué:* no tener que reconstruir la conversación para saber qué sigue.
 
 ### El bloque de comandos, línea por línea
 
@@ -252,6 +270,34 @@ Los tests pueden pasar y la app, aun así, no servir. Al terminar cada rebanada 
 - Si el LLM propone un refactor (una tarjeta `REF-NN`), se ejecuta como cualquier tarea, con la regla extra de que los tests no cambian y siguen verdes, **antes** de escribir las tarjetas de la ola siguiente. *Para qué:* así las tarjetas se escriben sobre un árbol ya ordenado y no sobre uno que va a cambiar. Cuando termine, vuelve al mismo chat con el `git ls-files` nuevo y pídele el paso 3.
 - Las tarjetas nuevas se reparten con `python tools/init_plan.py PLAN-ola2.md` (un archivo con solo `## Tarjetas de la ola 2`). *Para qué:* las verifica contra el backlog guardado y no pisa las tarjetas que ya existen.
 - Escribir las tarjetas de la ola siguiente es rutina. **Cambiar el backlog** (orden, dependencias, tareas nuevas) es replanificar: se guarda como un archivo nuevo, `PLAN-v2.md`, con las tres secciones, la versión siguiente y su `Motivo del cambio:` (formato en `docs/plantillas/plan.md`), y se reparte con `python tools/init_plan.py PLAN-v2.md`. *Para qué:* reemplaza `backlog.md` y `cobertura.md` por los nuevos y deja como están las tarjetas que ya existen.
+
+## Etapa 5: entrega, operación y distribución
+
+Las cuatro etapas anteriores terminan en «CI verde y tarea cerrada». Eso todavía no es software que alguien use: falta que arranque en una máquina que no es la tuya, que los datos sobrevivan a una actualización y que un fallo se pueda diagnosticar sin estar tú delante. *Para qué:* es la parte de la que depende que el software sea confiable con datos reales y con el tiempo, y es también donde el método se quedaba corto.
+
+Esta etapa **no va al final del proyecto**. Su alcance se declara en el diseño, porque cambia el plan (una migración o un empaquetado son tareas), y se ejerce en cada versión que publicas.
+
+**Primero, el alcance.** Lo declaras en el diseño y en `distribucion` de `comprobaciones.json`. Una herramienta personal no paga el coste de un producto distribuido:
+
+| Alcance | Cuándo | Qué exige, además de lo anterior |
+|---|---|---|
+| `solo-yo` | Solo tú, en tu máquina | Arranque reproducible · tus datos sobreviven a una actualización · un fallo se ve y se puede diagnosticar |
+| `mis-dispositivos` | La misma app en tu PC y en tu móvil | Versión de producto · identidad de cada dispositivo · qué pasa si dos copias cambian lo mismo |
+| `otras-personas` | Alguien más la instala | Empaquetado · plataformas verificadas, no supuestas · notas de cambio para quien la usa · licencia propia y de terceros · qué sale del equipo cuando hay red |
+
+**Las siete preguntas de la etapa.** Cada respuesta tiene un sitio; ninguna crea un documento nuevo.
+
+1. ¿Quién la instala, y en qué plataformas y versiones **exactas**? → `plataformas` de `comprobaciones.json` y la sección *Tecnología* del diseño.
+2. ¿Cómo se instala, y cómo se comprueba que quedó bien desde un entorno limpio? → `comandos` de `comprobaciones.json`; la instalación real la ejecuta el CI en cada plataforma declarada.
+3. ¿Qué versión es esta y qué cambió para quien la usa? → la versión en el manifiesto del stack, y las notas de cambio que salen de los reportes de las tareas cerradas.
+4. ¿Qué pasa con los datos al actualizar? → `datos` de `comprobaciones.json`: la versión de tus datos, y una carpeta con ejemplos de cada versión anterior que alguna prueba use. Respalda antes de migrar.
+5. ¿Cómo se ve y se diagnostica un fallo en una máquina ajena? → un registro en una ubicación conocida, un mensaje que diga qué hacer, y una forma de que te lo envíen.
+6. ¿Qué se expone cuando hay red? → una ADR **antes** del primer incremento con red: identidad de dispositivos, qué se sincroniza y qué no sale del equipo.
+7. ¿Qué licencia tiene lo tuyo y lo de terceros que distribuyes? → un archivo de licencia en la raíz.
+
+**Qué comprueba una máquina y qué no.** `python tools/comprobar.py entrega` comprueba las preguntas 1, 2, 3, 4 y 7, y falla cuando la respuesta es una promesa en vez de un hecho: una plataforma declarada que el CI no ejecuta, unos datos viejos que ninguna prueba usa, una licencia que no está. Las preguntas **5 y 6 no tienen comprobación automática**: la 5 depende de cada proyecto y la 6 es una decisión. No finjas que están cubiertas porque el ejecutor salió en verde.
+
+**La tarjeta de entrega** es una `T-NNN` normal, como los cambios visuales: no hay un prefijo nuevo. Sus criterios son los de arriba que apliquen, con su evidencia; y la prueba de uso de la rebanada se hace sobre la versión instalada, no sobre tu copia de desarrollo.
 
 ## Documentar correcciones
 

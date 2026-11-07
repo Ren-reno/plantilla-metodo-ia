@@ -115,7 +115,7 @@ El bundle incluye texto de `Leer:` y `Tocar:`; omite binarios y no garantiza que
 
 ## Condiciones de salida
 
-Antes del plan comprueba problema y caso real, alcance, actores y roles aplicables, reglas con ejemplos, experiencia revisada, diagramas necesarios, viabilidad y operación mínima. Cada resultado importante debe tener evidencia de aceptación prevista: tests, revisión visual o prueba humana. En este momento se planifican esas comprobaciones; no se afirma haber ejecutado tests de una app que aún no existe.
+Antes del plan comprueba problema y caso real, alcance, actores y roles aplicables, reglas con ejemplos, experiencia revisada, diagramas necesarios, viabilidad y operación mínima. Declara también **quién instalará esto y en qué plataformas**: `solo-yo`, `mis-dispositivos` u `otras-personas`, según la etapa 5 de [la guía de trabajo](COMO-TRABAJAR.md). No es un trámite para después: un empaquetado, una migración de datos o un contrato de sincronización son tareas del plan, y decidirlo al final obliga a rehacerlo. Cada resultado importante debe tener evidencia de aceptación prevista: tests, revisión visual o prueba humana. En este momento se planifican esas comprobaciones; no se afirma haber ejecutado tests de una app que aún no existe.
 
 Registra en «Alcance (dentro / fuera)» del diseño:
 

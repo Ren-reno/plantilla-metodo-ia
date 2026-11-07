@@ -26,6 +26,9 @@ htmlcov/
 # --- Salida de tools/bundle.py (es derivada y pesada; no se versiona) ---
 bundles/
 
+# --- Logs de tools/comprobar.py (son evidencia local de cada ejecución; no se versionan) ---
+.comprobaciones/
+
 # --- Editor y sistema operativo ---
 .vscode/
 .idea/
