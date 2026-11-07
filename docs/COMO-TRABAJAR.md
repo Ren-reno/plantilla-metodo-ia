@@ -314,6 +314,10 @@ En `Hecho` del reporte escribe fallo, comportamiento esperado, causa encontrada 
 
 Si el código incumplía un requisito correcto, ese requisito se conserva. Si estaba mal el diseño, actualiza también RF, roles, experiencia o diagramas afectados y decláralos en `Tocar:`. Una corrección no se disfraza de REF.
 
+## Pedir un informe del proyecto
+
+Cuando quieras, puedes pedir un informe que explique el proyecto entero —problema, solución, stack, arquitectura y los conceptos necesarios para entenderlo— con el prompt de [prompts/informe-de-diseno.md](prompts/informe-de-diseno.md). Sirve para aprender de lo que estás construyendo y para que entre otra persona. Solo sale cuando lo pides: no se añade a ninguna tarjeta ni a ningún reporte, y ninguna herramienta lo lee. *Para qué:* los documentos del repo están repartidos por fuerza, cada uno responde una pregunta, y nada deriva la explicación completa y contrastada. Es una vista derivada con fecha: si contradice a `docs/`, manda `docs/`.
+
 ## Hábitos que ahorran tokens y esperas
 
 - **Un chat por tarea** (y uno por hito). Cada mensaje hace que el LLM relea todo el chat: cuanto más largo, más cuesta. Si un chat se alarga, ciérralo y retoma con un bundle o un archivo nuevo.

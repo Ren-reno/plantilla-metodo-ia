@@ -9,6 +9,7 @@
 | Entender cómo se trabaja en este repo (guía para ti) | [docs/COMO-TRABAJAR.md](docs/COMO-TRABAJAR.md) |
 | Las reglas que sigue cualquier LLM | [docs/00-LEEME-IA.md](docs/00-LEEME-IA.md), más el anexo de su perfil en [docs/perfiles/](docs/perfiles/) |
 | El mapa de toda la documentación | [docs/README.md](docs/README.md) |
+| Entender el proyecto entero: problema, stack, arquitectura y conceptos | [docs/prompts/informe-de-diseno.md](docs/prompts/informe-de-diseno.md) |
 | Saber qué está hecho, qué falta y qué sigue | `docs/plan/ESTADO.md` (lo genera `tools/cerrar.py`; abre con la etapa, el siguiente comando y la decisión pendiente) |
 
 ## Cómo correr la app

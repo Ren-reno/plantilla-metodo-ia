@@ -22,6 +22,7 @@ Si necesitas saber **X**, mira **Y**:
 | Cómo escribir código y qué comandos usar | `00-LEEME-IA.md` |
 | Cómo entrega el LLM según dónde corra (chat web o agente) | `perfiles/`, y «Elegir el perfil» en [COMO-TRABAJAR.md](COMO-TRABAJAR.md) |
 | Cómo trabajar con este repo (guía para ti) | `COMO-TRABAJAR.md` |
+| Entender el proyecto entero, para aprender o para que entre alguien | [prompts/informe-de-diseno.md](prompts/informe-de-diseno.md) |
 | Los formatos en blanco (diseño, experiencia, inventario de diagramas, plan, tarjeta, ADR, contrato, reporte, cambio) | `plantillas/` |
 | El diseño original, antes de repartirlo | `archivo/` (solo histórico) |
 
