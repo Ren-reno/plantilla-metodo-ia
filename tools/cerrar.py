@@ -10,6 +10,7 @@ Dos momentos, como la recepción provisoria y la definitiva de una obra. Desde l
 
 Opciones de datos y ensayo:
     --desde REF    commit desde el que mirar lo que cambió la tarea (por defecto HEAD~1: el último commit)
+    --commit REF   el commit de la tarea que se anota en ESTADO.md (por defecto HEAD)
     --llm NOMBRE   qué LLM la hizo; se anota en ESTADO.md
     --check        ensayo: revisa y muestra qué haría, sin escribir ni borrar nada
 
@@ -229,15 +230,21 @@ def _git(raiz, *args):
 
 
 class Cambios:
-    """Lo que cambió el trabajo de la tarea: los archivos entre «desde» y HEAD, según git."""
+    """Lo que cambió el trabajo de la tarea: los archivos entre «desde» y HEAD, según git.
 
-    def __init__(self, desde, commit, archivos, sucios):
+    «commit» es el que se anota en ESTADO.md; «propios» son los archivos que ese commit cambió por sí solo,
+    y sirven para comprobar que el commit anotado sea de verdad el del trabajo de la tarea.
+    """
+
+    def __init__(self, desde, commit, archivos, sucios, propios=()):
         self.desde, self.commit, self.archivos, self.sucios = desde, commit, archivos, sucios
+        self.propios = list(propios)
 
 
-def leer_cambios(raiz, desde, ignorar=()):
-    if desde.startswith("-"):
-        raise bd.GitError(f"«{desde}» no es un commit (--desde espera un commit, por ejemplo HEAD~2)")
+def leer_cambios(raiz, desde, ignorar=(), ref="HEAD"):
+    for valor, opcion in ((desde, "--desde"), (ref, "--commit")):
+        if valor.startswith("-"):
+            raise bd.GitError(f"«{valor}» no es un commit ({opcion} espera un commit, por ejemplo HEAD~2)")
     if _git(raiz, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").returncode != 0:
         raise bd.GitError("este repo todavía no tiene commits: guarda primero el trabajo de la tarea (el bloque de "
                           "comandos del LLM ya hace el commit)")
@@ -245,7 +252,9 @@ def leer_cambios(raiz, desde, ignorar=()):
         pista = (" ¿Es el primer commit del repo? Usa --desde con el commit anterior al trabajo de la tarea."
                  if desde == DESDE_POR_DEFECTO else "")
         raise bd.GitError(f"no encuentro el commit «{desde}».{pista}")
-    corto = _git(raiz, "rev-parse", "--short=7", "HEAD").stdout.strip()
+    if ref != "HEAD" and _git(raiz, "rev-parse", "--verify", "--quiet", ref + "^{commit}").returncode != 0:
+        raise bd.GitError(f"no encuentro el commit «{ref}» (--commit espera el commit del trabajo de la tarea)")
+    corto = _git(raiz, "rev-parse", "--short=7", ref).stdout.strip()
     r = _git(raiz, "diff", "--name-status", "--no-renames", "-z", desde, "HEAD")
     if r.returncode != 0:
         raise bd.GitError("git no pudo comparar los commits: " + (r.stderr.strip() or f"código {r.returncode}"))
@@ -254,7 +263,9 @@ def leer_cambios(raiz, desde, ignorar=()):
                 for i in range(0, len(partes) - 1, 2) if partes[i]]
     r = _git(raiz, "status", "--porcelain")
     sucios = [l[3:] for l in r.stdout.splitlines() if r.returncode == 0 and l[3:] not in set(ignorar)]
-    return Cambios(desde, corto, archivos, len(sucios))
+    # Los archivos del commit anotado, por sí solo: «show» de un merge no los lista, y entonces no se comprueba.
+    propios = [f for f in _git(raiz, "show", "--format=", "--name-only", "-z", ref).stdout.split("\0") if f]
+    return Cambios(desde, corto, archivos, len(sucios), propios)
 
 
 def _coincide(ruta, patron):
@@ -590,6 +601,10 @@ def _evaluar(raiz, tarjeta, es_ref, rep, cambios, reintento, c):
     if fuera:
         c.banderas.append(f"archivos fuera de «Tocar:» ({len(fuera)}): {_lista(fuera)}")
         notas.append(f"fuera de Tocar: {len(fuera)}")
+    if cambios.propios and tarjeta.tocar and not any(en_tocar(r, tarjeta.tocar) for r in cambios.propios):
+        c.avisos.append(f"el commit que voy a anotar ({cambios.commit}) no cambió ningún archivo de «Tocar:»: "
+                        "si el trabajo de la tarea está en otro commit, anótalo con «--commit». Un commit "
+                        "equivocado en ESTADO.md manda a revisar el CI que no es")
     tests = sorted(r for _, r in archivos if r.startswith("tests/"))
     tests_viejos = sorted(r for e, r in archivos if e in ("M", "D") and r.startswith("tests/"))
     if es_ref and tests:
@@ -632,7 +647,7 @@ def _evaluar(raiz, tarjeta, es_ref, rep, cambios, reintento, c):
     return notas
 
 
-def _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, desde, llm):
+def _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, desde, llm, commit=None):
     raiz, tarea, tarjeta = m.raiz, m.tarea, m.tarjeta
     rep = Reporte(reporte)
     c.errores += rep.errores
@@ -662,7 +677,8 @@ def _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, de
         c.codigo = 1
         return c
     try:
-        cambios = leer_cambios(raiz, desde or DESDE_POR_DEFECTO, ignorar=[mover] if mover else [])
+        cambios = leer_cambios(raiz, desde or DESDE_POR_DEFECTO, ignorar=[mover] if mover else [],
+                               ref=commit or "HEAD")
     except bd.GitError as e:
         return c.parar(2, str(e))
     c.cambios, c.commit = cambios, cambios.commit
@@ -680,6 +696,10 @@ def _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, de
     propuestas = proponer_adrs(raiz, tarea, afectan, c.rel_reporte, c.avisos)
     c.adrs = sorted(propuestas)
     fila = m.filas[tarea]
+    if not llm and not fila["llm"]:
+        c.avisos.append("no declaraste quién hizo la tarea: la columna LLM de ESTADO.md queda vacía, y una celda "
+                        "vacía no dice que no hubo LLM, dice que nadie lo anotó. Pásalo con «--llm nombre» "
+                        "(o «--llm ninguno» si la hiciste a mano)")
     fila["estado"] = "parcial" if parcial else "en revisión"
     fila["commit"] = cambios.commit
     fila["notas"] = "; ".join(notas)
@@ -725,7 +745,7 @@ def _planear_hecha(m, c):
 
 
 def planear(raiz, tarea, reporte=None, nombre_reporte="reporte.md", mover=None, hecha=False, parcial=False,
-            reintento=False, desde=None, llm=None):
+            reintento=False, desde=None, llm=None, commit=None):
     """Decide qué escribir y qué borrar. No toca el disco: devuelve un Cierre."""
     c = Cierre()
     tarea = (tarea or "").strip().upper()
@@ -737,7 +757,7 @@ def planear(raiz, tarea, reporte=None, nombre_reporte="reporte.md", mover=None, 
         return c
     if hecha:
         return _planear_hecha(m, c)
-    return _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, desde, llm)
+    return _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, desde, llm, commit)
 
 
 # ---- escritura -----------------------------------------------------------------------------------------
@@ -804,11 +824,13 @@ def main(argv=None):
     ap.add_argument("--parcial", action="store_true", help="parche 1 del modo estricto: la tarea queda «parcial»")
     ap.add_argument("--reintento", action="store_true", help="segundo intento de la tarea tras un fallo")
     ap.add_argument("--desde", metavar="REF", help=f"commit desde el que mirar los cambios (por defecto {DESDE_POR_DEFECTO})")
+    ap.add_argument("--commit", metavar="REF",
+                    help="el commit de la tarea que se anota en ESTADO.md (por defecto HEAD)")
     ap.add_argument("--llm", metavar="NOMBRE", help="qué LLM hizo la tarea (se anota en ESTADO.md)")
     ap.add_argument("--check", action="store_true", help="ensayo: no escribe ni borra nada")
     args = ap.parse_args(argv)
     if args.hecha:
-        if args.reporte or args.parcial or args.reintento or args.desde or args.llm:
+        if args.reporte or args.parcial or args.reintento or args.desde or args.llm or args.commit:
             ap.error("--hecha se usa solo: cerrar.py T-007 --hecha")
     elif not args.reporte:
         ap.error("falta el reporte: cerrar.py T-007 reporte.md")
@@ -832,7 +854,7 @@ def main(argv=None):
             mover = ruta.name
 
     c = planear(raiz, args.tarea, texto, args.reporte or "", mover, args.hecha, args.parcial, args.reintento,
-                args.desde, args.llm)
+                args.desde, args.llm, args.commit)
     if c.negativas or c.errores:
         _imprimir_motivos(c, args.reporte or "")
         return c.codigo or 1
