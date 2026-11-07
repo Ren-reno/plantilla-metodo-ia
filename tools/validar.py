@@ -17,7 +17,9 @@ Comprueba:
        - Máximo de 4 criterios de aceptación (D16: si pasa de 4 sube de camino o debe partirse).
        - Campo «Fuera de alcance:» presente y explícito (D16).
        - Coherencia con el backlog («Depende de:» y «Cubre:» idénticos a los de su línea del backlog).
-       - Archivos citados en «Leer:» existen o indican «(lo produce T-xxx)».
+       - Archivos citados en «Leer:» existen con su grafía exacta, o indican «(lo produce T-xxx)».
+         Es error, no aviso: bundle.py se niega en el mismo caso. La grafía se compara con el
+         disco porque Windows no distingue mayúsculas y el CI en Linux sí.
        - ADRs citados existen; si están en estado «propuesta», avisa que bloquean bundle.py (D14).
        - En tarjetas REF-NN: solo tocan código (nunca tests ni docs).
     5. Estructura y alertas de refactor (D37): avisa si hay archivos de código muy grandes (>500 líneas)
@@ -33,7 +35,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 # Permitir importar herramientas hermanas desde tools/
 _TOOLS = Path(__file__).resolve().parent
@@ -89,6 +91,33 @@ def detectar_ciclos(grafo: dict[str, list[str]]) -> list[list[str]]:
             dfs(nodo)
 
     return ciclos
+
+
+def ruta_real(raiz: Path, rel: str) -> str | None:
+    """La ruta tal como está escrita en el disco, o None si no existe.
+
+    Hace falta porque en Windows `Path.exists()` no distingue mayúsculas: una tarjeta puede
+    citar «docs/experiencia.md» y pasar la validación local mientras el CI en Linux no
+    encuentra el archivo, que se llama «docs/EXPERIENCIA.md». Compara segmento a segmento
+    con lo que hay en el disco para que local y CI digan lo mismo.
+    """
+    actual = raiz
+    partes: list[str] = []
+    for parte in PurePosixPath(rel).parts:
+        try:
+            nombres = {p.name for p in actual.iterdir()}
+        except OSError:
+            return None
+        if parte in nombres:
+            real = parte
+        else:
+            iguales = sorted(n for n in nombres if n.lower() == parte.lower())
+            if not iguales:
+                return None
+            real = iguales[0]
+        partes.append(real)
+        actual = actual / real
+    return "/".join(partes)
 
 
 class Validador:
@@ -450,10 +479,17 @@ class Validador:
                         self.error(f"{tid}: cita en «Leer:» el ADR-{num_adr}, pero no existe archivo correspondiente en docs/decisiones/.")
                     elif self.adrs_diseno[num_adr] == "propuesta":
                         self.aviso(f"{tid}: cita en «Leer:» el ADR-{num_adr} que está en estado «propuesta» (bloqueará bundle.py; D14).")
-                else:
-                    # Archivo general: si no existe y no dice (lo produce T-xxx)
-                    if not (self.raiz / ruta_limpia).exists() and "(lo produce T-" not in item:
-                        self.aviso(f"{tid}: cita en «Leer:» «{ruta_limpia}», que no existe en el repo ni indica qué tarea lo produce.")
+                elif "(lo produce T-" not in item:
+                    # Archivo general. Es error, no aviso: bundle.py se niega a armar el bundle
+                    # en este mismo caso, así que avisarlo aquí y dejar pasar el CI solo retrasa
+                    # el bloqueo. La grafía se comprueba aparte porque Windows no la distingue.
+                    real = ruta_real(self.raiz, ruta_limpia)
+                    if real is None:
+                        self.error(f"{tid}: cita en «Leer:» «{ruta_limpia}», que no existe en el repo ni indica "
+                                   "qué tarea lo produce (bundle.py se negará a armar su bundle).")
+                    elif real != ruta_limpia:
+                        self.error(f"{tid}: cita en «Leer:» «{ruta_limpia}», pero el archivo versionado es "
+                                   f"«{real}». Windows resuelve las dos; Linux y el CI solo la segunda.")
 
             # 5. Comprobar tamaño de Tocar (aislamiento de módulo)
             modulos_tocados = set()

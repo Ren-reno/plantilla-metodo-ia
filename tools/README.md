@@ -189,7 +189,7 @@ Comprueba:
    - **`Fuera de alcance:` obligatorio (D16):** delimita explícitamente lo que no se construye para cortar código innecesario.
    - **Coherencia con el backlog:** `Depende de:` y `Cubre:` de la tarjeta deben ser idénticos a los de su línea del backlog.
    - **Tarjetas de refactor (`REF-NN`, D37):** rechaza rutas en `tests/` y `docs/`; no comprueba que cualquier otra ruta sea código de producción.
-   - **Archivos citados en `Leer:`:** comprueba que existan o indiquen `(lo produce T-xxx)`; avisa si un ADR citado está en estado «propuesta» (bloqueará `bundle.py`).
+   - **Archivos citados en `Leer:`:** comprueba que existan **con su grafía exacta** o indiquen `(lo produce T-xxx)`. Es **error**, no aviso, porque `bundle.py` se niega a armar el bundle en el mismo caso: avisarlo aquí y dejar pasar el CI solo retrasa el bloqueo. La grafía se compara con lo que hay en el disco, segmento a segmento, porque Windows resuelve `docs/experiencia.md` sobre un archivo llamado `docs/EXPERIENCIA.md` y el CI en Linux no: así la validación local y la del CI dicen lo mismo. Avisa, además, si un ADR citado está en estado «propuesta» (bloqueará `bundle.py`).
 5. **Estructura y alertas de refactor (D37):** avisa si hay archivos de código muy grandes (>500 líneas) como candidatos a evaluar en el chat de hito.
 
 - **Límites:** no valida PlantUML ni duplicación de código. Si falta la matriz de cobertura o no tiene filas, no comprueba sus relaciones; por eso salida 0 no certifica la integridad de todos los documentos. El umbral de 500 líneas es provisional.

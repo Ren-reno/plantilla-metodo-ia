@@ -48,6 +48,9 @@ class RepoTemporal:
 
     def poblar_ejemplo(self):
         """Reparte el diseño y el plan de ejemplo para tener un estado válido completo."""
+        # Toda tarjeta cita las reglas, y sin ellas bundle.py se niega a armar el bundle:
+        # un repo con tarjetas y sin este archivo no es un estado real del método.
+        self.poner("docs/00-LEEME-IA.md", "# Reglas para cualquier LLM\n\nContenido de prueba.\n")
         entorno = dict(os.environ, PYTHONIOENCODING="utf-8")
         self.poner("DISENO.md", DISENO_EJEMPLO)
         subprocess.run([sys.executable, str(self.dir / "tools" / "init_diseno.py"), "DISENO.md"],
@@ -91,6 +94,29 @@ class TestDeteccionCiclos(unittest.TestCase):
         self.assertTrue(len(ciclos) >= 1)
 
 
+# ---- Grafía real de una ruta ----------------------------------------------
+class TestRutaReal(unittest.TestCase):
+    def setUp(self):
+        self.repo = RepoTemporal(self)
+        self.repo.poner("docs/EXPERIENCIA.md", "# Experiencia\n")
+        self.repo.poner("docs/sub/Modelo.md", "# Modelo\n")
+
+    def test_la_grafia_exacta_se_devuelve_tal_cual(self):
+        self.assertEqual(va.ruta_real(self.repo.dir, "docs/EXPERIENCIA.md"), "docs/EXPERIENCIA.md")
+        self.assertEqual(va.ruta_real(self.repo.dir, "docs/sub/Modelo.md"), "docs/sub/Modelo.md")
+
+    def test_otra_grafia_devuelve_la_del_disco(self):
+        self.assertEqual(va.ruta_real(self.repo.dir, "docs/experiencia.md"), "docs/EXPERIENCIA.md")
+        self.assertEqual(va.ruta_real(self.repo.dir, "DOCS/sub/modelo.MD"), "docs/sub/Modelo.md")
+
+    def test_lo_que_no_existe_devuelve_none(self):
+        self.assertIsNone(va.ruta_real(self.repo.dir, "docs/no-existe.md"))
+        self.assertIsNone(va.ruta_real(self.repo.dir, "otra/carpeta/x.md"))
+
+    def test_una_carpeta_tambien_se_resuelve(self):
+        self.assertEqual(va.ruta_real(self.repo.dir, "docs/sub"), "docs/sub")
+
+
 # ---- Validaciones de fondo ------------------------------------------------
 class TestValidadorBase(unittest.TestCase):
     def setUp(self):
@@ -106,6 +132,39 @@ class TestValidadorBase(unittest.TestCase):
         # Solo avisos informativos sobre ADRs en propuesta (lo normal antes de arrancar T-001)
         for a in avisos:
             self.assertTrue("propuesta" in a or "no existe" in a or "líneas" in a)
+
+    def citar_en_tarjeta(self, ruta, tid="T-002"):
+        """Deja la tarjeta citando solo las reglas y la ruta indicada."""
+        p = self.repo.dir / f"docs/plan/tareas/{tid}.md"
+        lineas = [f"Leer (solo esto): docs/00-LEEME-IA.md · {ruta}" if l.startswith("Leer")
+                  else l for l in p.read_text(encoding="utf-8").splitlines()]
+        p.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
+        val = va.Validador(self.repo.dir)
+        val.cargar()
+        return val.validar()
+
+    def test_un_archivo_citado_que_no_existe_es_error_no_aviso(self):
+        # bundle.py se niega a armar el bundle en este mismo caso: avisarlo aquí y dejar
+        # pasar el CI solo retrasa el bloqueo hasta que alguien intenta trabajar.
+        errores, avisos = self.citar_en_tarjeta("docs/no-existe.md")
+        self.assertTrue(hay(errores, "no existe en el repo ni indica"), errores)
+        self.assertFalse(hay(avisos, "docs/no-existe.md"))
+
+    def test_una_grafia_distinta_es_error_aunque_windows_la_resuelva(self):
+        # El caso real del piloto: ocho tarjetas citaban docs/experiencia.md con
+        # docs/EXPERIENCIA.md versionado; Windows lo resolvía y el CI quedó verde.
+        self.repo.poner("docs/EXPERIENCIA.md", "# Experiencia\n")
+        errores, _ = self.citar_en_tarjeta("docs/experiencia.md")
+        self.assertTrue(hay(errores, "el archivo versionado es «docs/EXPERIENCIA.md»"), errores)
+
+    def test_la_grafia_correcta_no_molesta(self):
+        self.repo.poner("docs/EXPERIENCIA.md", "# Experiencia\n")
+        errores, _ = self.citar_en_tarjeta("docs/EXPERIENCIA.md")
+        self.assertFalse(hay(errores, "EXPERIENCIA"), errores)
+
+    def test_un_archivo_que_produce_otra_tarea_sigue_exento(self):
+        errores, _ = self.citar_en_tarjeta("docs/contratos/futuro.md (lo produce T-001)")
+        self.assertFalse(hay(errores, "futuro.md"), errores)
 
     def test_detecta_ciclo_en_backlog(self):
         # Modificar backlog para introducir T-001 -> T-003 y T-003 -> T-001
