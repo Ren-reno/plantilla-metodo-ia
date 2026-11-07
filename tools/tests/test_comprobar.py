@@ -176,8 +176,10 @@ class VerdesFalsos(unittest.TestCase):
         self.assertIn("falta package-lock.json", res["detalle"])
 
     def test_3_un_comando_documentado_que_cita_un_modulo_inexistente_falla(self):
-        # El caso de uvicorn src.app.web:app, documentado sin existir (H-29, seguimiento).
-        r = Repo(self, config(comandos={"arrancar": "python -m uvicorn src.app.web:app"}))
+        # El caso de uvicorn src.app.web:app, documentado sin existir (H-29, seguimiento):
+        # el repo tiene src/, pero no ese módulo.
+        r = Repo(self, config(comandos={"arrancar": "python -m http.server src.app.web:app"}))
+        r.poner("src/app/main.py", "x = 1\n")
         res = r.paso("comandos")
         self.assertEqual(res["estado"], co.FALLO)
         self.assertIn("src.app.web", res["detalle"])
@@ -187,9 +189,18 @@ class VerdesFalsos(unittest.TestCase):
         self.assertEqual(r.paso("comandos")["estado"], co.OK)
 
     def test_3c_un_modulo_propio_del_repo_se_localiza_sin_importarlo(self):
-        r = Repo(self, config(comandos={"arrancar": "python -m uvicorn src.app.web:app"}))
+        r = Repo(self, config(comandos={"arrancar": "python -m http.server src.app.web:app"}))
         r.poner("src/app/web.py", "raise SystemExit('esto no debe ejecutarse al comprobar')\n")
         self.assertEqual(r.paso("comandos")["estado"], co.OK)
+
+    def test_3e_un_modulo_de_terceros_sin_instalar_se_informa_pero_no_falla(self):
+        # comprobar.py no instala nada: que una dependencia no esté aquí no es
+        # documentación equivocada. Lo dice y sigue; «dependencias» cubre lo otro.
+        r = Repo(self, config(comandos={"arrancar": "python -m paquete_que_no_existe_xyz"}))
+        res = r.paso("comandos")
+        self.assertEqual(res["estado"], co.OK)
+        self.assertIn("no está instalado aquí", res["detalle"])
+        self.assertIn("paquete_que_no_existe_xyz", res["detalle"])
 
     def test_3d_un_comando_pendiente_no_pasa_como_declarado(self):
         r = Repo(self, config(comandos={"instalar": "(pendiente)"}))

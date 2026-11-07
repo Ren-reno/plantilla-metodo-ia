@@ -215,7 +215,7 @@ python tools/comprobar.py entrega --repo DIR --python RUTA --timeout 900
 - **Qué comprueba cada paso que hoy nadie comprueba:**
   - `pruebas`: el comando debe terminar bien **y** haber ejecutado al menos una prueba. Reconoce el conteo de unittest, pytest, jest, vitest, mocha y `node --test`. Si no puede contar, falla y lo dice: un verde sin pruebas no demuestra nada.
   - `dependencias`: los archivos declarados existen y, con `"fijadas": true`, cada línea de un `.txt` fija versión exacta con `==`. Un `>=` no es una instalación reproducible.
-  - `comandos`: cada comando documentado existe. Resuelve el programa y **localiza** los módulos que nombra (`-m paquete` y `paquete.modulo:objeto`) sin importarlos ni ejecutarlos.
+  - `comandos`: cada comando documentado existe. Resuelve el programa y **localiza** los módulos que nombra (`-m paquete` y `paquete.modulo:objeto`) sin importarlos ni ejecutarlos. Distingue dos cosas que no son lo mismo: un módulo **del propio repo** que no se encuentra es documentación equivocada y falla; uno **de terceros** que no se encuentra solo dice que aquí no está instalado, así que lo informa y sigue (esta herramienta no instala nada; de lo declarado se encarga `dependencias`).
   - `version`: hay versión de producto en los manifiestos y no se contradicen.
   - `plataformas`: las plataformas declaradas aparecen en el workflow del CI. Una plataforma declarada que nadie ejecuta es una promesa, no una comprobación.
   - `licencia`: hay archivo de licencia cuando el software se distribuye a terceros.

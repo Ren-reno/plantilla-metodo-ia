@@ -314,6 +314,7 @@ def paso_comandos(ctx: Contexto, _nombre: str) -> dict:
         return resultado("comandos", OMITIDO, "no hay comandos declarados")
 
     problemas: list[str] = []
+    notas: list[str] = []
     revisados = 0
     for nombre, crudo in sorted(comandos.items()):
         if str(crudo).strip().lower() in ("(pendiente)", "pendiente"):
@@ -334,11 +335,20 @@ def paso_comandos(ctx: Contexto, _nombre: str) -> dict:
             problemas.append(f"{nombre}: no existe el programa «{programa}»")
             continue
         for modulo in modulos_citados(partes):
-            if not ctx.modulo_existe(modulo):
+            if ctx.modulo_existe(modulo):
+                continue
+            # Un módulo del propio repo que no se encuentra es documentación equivocada.
+            # Uno de terceros que no se encuentra solo dice que aquí no está instalado,
+            # y esta herramienta no instala nada: se informa, no se falla.
+            if (ctx.raiz / modulo.split(".")[0]).exists():
                 problemas.append(f"{nombre}: no se encuentra el módulo «{modulo}»")
+            else:
+                notas.append(f"«{modulo}» no está instalado aquí")
+    detalle_notas = f" · sin comprobar: {', '.join(notas)}" if notas else ""
     if problemas:
-        return resultado("comandos", FALLO, "; ".join(problemas))
-    return resultado("comandos", OK, f"{revisados} comando(s) documentados existen y se pueden localizar")
+        return resultado("comandos", FALLO, "; ".join(problemas) + detalle_notas)
+    return resultado("comandos", OK,
+                     f"{revisados} comando(s) documentados existen y se pueden localizar{detalle_notas}")
 
 
 def modulos_citados(partes: list[str]) -> list[str]:
