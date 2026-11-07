@@ -45,6 +45,10 @@ REL_TAREAS = "docs/plan/tareas"
 REL_LEEME = "docs/00-LEEME-IA.md"
 REL_COMPROBACIONES = "comprobaciones.json"
 CLAVES_ENTORNO = ("terminal", "carpeta_parches")
+CLAVES_OPCIONALES = ("perfil",)          # tiene un valor por omisión: su ausencia no se avisa
+REL_PERFILES = "docs/perfiles"
+PERFILES = ("chat-web", "agente")
+PERFIL_POR_OMISION = "chat-web"          # el que no supone ningún acceso
 
 RE_ID = re.compile(r"^(?:T|REF)-\d+$")
 RE_TITULO = re.compile(r"^#\s+((?:T|REF)-\d+)\s+·\s+(.+)$")
@@ -231,7 +235,7 @@ def leer_entorno(home):
             crudo = json.loads(ruta.read_bytes().decode("utf-8-sig"))  # utf-8-sig: PowerShell suele guardar con BOM
             if not isinstance(crudo, dict):
                 raise ValueError("no es un objeto JSON")
-            for clave in CLAVES_ENTORNO:
+            for clave in CLAVES_ENTORNO + CLAVES_OPCIONALES:
                 valor = crudo.get(clave)
                 if isinstance(valor, str) and valor.strip():
                     datos[clave] = valor.strip()
@@ -242,6 +246,22 @@ def leer_entorno(home):
         aviso = ("~/.metodo-ia.json no existe o no trae " + " ni ".join(f"«{c}»" for c in faltan)
                  + ": el LLM te preguntará esos datos una vez")
     return datos, aviso
+
+
+def perfil_de(entorno, res):
+    """El perfil declarado en ~/.metodo-ia.json, o el que no supone ningún acceso.
+
+    Decide qué anexo de «cómo entregas» viaja en el bundle. Un valor que no existe se
+    avisa en vez de dejar el bundle sin anexo en silencio.
+    """
+    valor = (entorno.get("perfil") or "").strip().lower()
+    if not valor:
+        return PERFIL_POR_OMISION
+    if valor not in PERFILES:
+        res.avisos.append(f"«perfil» de ~/.metodo-ia.json dice «{valor}», que no es un perfil "
+                          f"({', '.join(PERFILES)}): va el anexo de «{PERFIL_POR_OMISION}»")
+        return PERFIL_POR_OMISION
+    return valor
 
 
 # ---- armado del texto ----------------------------------------------------------------
@@ -352,11 +372,23 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
                                  f"ciérrala con «python tools/cerrar.py {d} --hecha» (borra su tarjeta) antes de seguir. "
                                  "--forzar salta esta compuerta, bajo tu responsabilidad")
 
-    # --- documentos de «Leer:» (las reglas siempre primero, y con ellas los comandos del proyecto)
+    # --- entorno y perfil: deciden qué anexo de «cómo entregas» viaja en el bundle
+    entorno, aviso_entorno = leer_entorno(home)
+    if aviso_entorno:
+        res.avisos.append(aviso_entorno)
+    perfil = perfil_de(entorno, res)
+    rel_perfil = f"{REL_PERFILES}/{perfil}.md"
+
+    # --- documentos de «Leer:» (las reglas siempre primero, y con ellas el perfil y los comandos)
     fijos = [Item(REL_LEEME, "", "", None)]
+    if rel_perfil in archivos:
+        fijos.append(Item(rel_perfil, "", "", None))
+    else:
+        res.avisos.append(f"no existe {rel_perfil}: el bundle va sin el anexo del perfil, así que "
+                          "el LLM no sabrá cómo tiene que entregar")
     if REL_COMPROBACIONES in archivos:      # existe desde T-001: es la única definición de los comandos
         fijos.append(Item(REL_COMPROBACIONES, "", "", None))
-    items = fijos + [i for i in t.leer if i.ruta not in (REL_LEEME, REL_COMPROBACIONES)]
+    items = fijos + [i for i in t.leer if i.ruta not in (REL_LEEME, REL_COMPROBACIONES, rel_perfil)]
     leer, vistos, por_crear = [], set(), []
     for it in items:
         encontrados = expandir(archivos, it.ruta)
@@ -438,10 +470,7 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
     res.avisos += omitidos
     res.por_crear = por_crear + tocar_nuevos
 
-    # --- entorno y árbol
-    entorno, aviso_entorno = leer_entorno(home)
-    if aviso_entorno:
-        res.avisos.append(aviso_entorno)
+    # --- árbol
     arbol = sorted(archivos)
     res.arbol = len(arbol)
     r = _git(raiz, "status", "--porcelain")
@@ -457,8 +486,9 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
     p = [f"# Bundle de {t.id} · {t.titulo}\n",
          "Armado por `tools/bundle.py`. Trae, en este orden: el árbol del repo · el «Entorno del usuario» · la "
          "tarjeta · los documentos que la tarjeta manda leer · el contenido actual de los archivos de `Tocar:` que "
-         "ya existen. Empieza por las reglas de `docs/00-LEEME-IA.md` (van más abajo). Si el proyecto ya declaró "
-         "sus comandos, `comprobaciones.json` va con ellas: son los únicos comandos que existen.\n"]
+         "ya existen. Empieza por las reglas de `docs/00-LEEME-IA.md` (van más abajo). Con ellas viaja el anexo "
+         "de tu perfil, que dice cómo entregas, y, si el proyecto ya declaró sus comandos, "
+         "`comprobaciones.json`: son los únicos comandos que existen.\n"]
     if parche2:
         p.append("**Modo estricto, parche 2.** Implementa la tarea. Los tests del parche 1 ya están en el repo: van "
                  "más abajo, y valen como `Leer:` y como `No tocar:` (no los modifiques).\n")
@@ -469,6 +499,7 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
     carpetas = {"terminal": "Terminal", "carpeta_parches": "Carpeta de parches"}
     lineas_env = [f"- {carpetas[c]}: {entorno.get(c, '(sin configurar)')}" for c in CLAVES_ENTORNO]
     lineas_env.append(f"- Carpeta del repo: {raiz}")
+    lineas_env.append(f"- Perfil: {perfil}")
     p.append("## Entorno del usuario\n\n" + "\n".join(lineas_env) + "\n")
     p.append(f"## Tarjeta {t.id}\n\n" + _bloque(texto_t))
     p.append("## Documentos que la tarjeta manda leer\n")

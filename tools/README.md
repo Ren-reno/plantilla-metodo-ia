@@ -99,15 +99,16 @@ Trae, en este orden (el que fija `docs/00-LEEME-IA.md`):
 | Sección | De dónde sale |
 |---|---|
 | Árbol del repo | Los archivos que existen y git conoce, más los nuevos que no ignora |
-| Entorno del usuario | `~/.metodo-ia.json` (claves `terminal` y `carpeta_parches`); la carpeta del repo es esta. Lo que falte se marca «(sin configurar)» y el LLM lo pregunta una vez: no se inventa nada |
+| Entorno del usuario | `~/.metodo-ia.json` (claves `terminal`, `carpeta_parches` y `perfil`); la carpeta del repo es esta. Lo que falte se marca «(sin configurar)» y el LLM lo pregunta una vez: no se inventa nada. `perfil` no se avisa si falta, porque tiene valor por omisión |
 | Tarjeta | `docs/plan/tareas/T-007.md`, tal cual |
-| Documentos que la tarjeta manda leer | Los de `Leer:`. `docs/00-LEEME-IA.md` va siempre primero, lo pida o no la tarjeta, y `comprobaciones.json` va con él cuando ya existe: así los comandos del proyecto viajan sin repetirse en ningún otro documento |
+| Documentos que la tarjeta manda leer | Los de `Leer:`. `docs/00-LEEME-IA.md` va siempre primero, lo pida o no la tarjeta; con él viajan el anexo del perfil declarado (`docs/perfiles/<perfil>.md`) y, cuando ya existe, `comprobaciones.json`: así las reglas, la forma de entregar y los comandos llegan sin repetirse en ningún otro documento |
 | Archivos de `Tocar:` que ya existen | Su contenido actual. Lo que aún no existe se lista como «por crear» |
 
 - **Sin duplicar.** Un archivo que está en `Leer:` y en `Tocar:` viaja una sola vez. Los textos se normalizan a saltos LF y sin BOM, como los guarda git. Las vallas son de 4 acentos graves, o más si un archivo ya trae vallas largas. Los archivos binarios o que no están en UTF-8 se omiten con aviso. Nunca lee fuera del repo.
 - **Se niega** (no escribe nada, y dice todos los motivos juntos) si: un ADR de `Leer:` no está `aceptada` (`propuesta` o `reemplazada`; **no se puede saltar**, porque pasar un ADR a aceptada es una decisión tuya); una tarea de `Depende de:` no está hecha (`--forzar` lo salta); un archivo de `Leer:` no existe y la tarjeta no dice qué tarea lo produce (`(lo produce T-003)`); o la tarjeta no se puede leer (le falta `Estado:`, `Leer:` o `Tocar:`, o trae algo que no es una ruta).
 - **«Hecha».** Una tarea está hecha cuando su tarjeta ya no existe en `docs/plan/tareas/`: así la deja `cerrar.py --hecha`. Si hay un backlog guardado, también comprueba que la dependencia exista en él, y eso ni `--forzar` lo salta. `ESTADO.md` no hace falta como fuente: como `cerrar.py --hecha` borra la tarjeta, las dos cosas siempre coinciden.
 - **Modo estricto.** El bundle normal sirve para el parche 1. Para el parche 2 usa `--parche2`: suma los tests del parche 1 (los archivos de `tests/` que `Tocar:` ya tiene) en una sección propia, que vale como `Leer:` y como `No tocar:`. Si no hay ninguno, se niega. Si la tarjeta es estricta, ya hay tests y no usaste `--parche2`, te lo avisa.
+- **Perfil.** `perfil` de `~/.metodo-ia.json` decide qué anexo de «cómo entregas» viaja: `chat-web` (tres bloques; la persona ejecuta) o `agente` (edita en local y deja diff, reporte y evidencia). Sin declararlo va `chat-web`, que no supone ningún acceso; un valor que no existe se avisa en vez de dejar el bundle sin anexo en silencio. El método, la evidencia y el cierre son los mismos en los dos.
 - **Avisos** (arma igual): cambios sin guardar (el bundle refleja tu disco, no el último commit); `bundles/` fuera de `.gitignore`; `~/.metodo-ia.json` ausente o incompleto; campos de la tarjeta sin llenar; el bundle supera el tamaño límite (conviene partir la tarea; los 60 KB son provisionales hasta medirlos con la primera app real).
 - **Resumen.** Imprime qué incluyó, con tamaños y una estimación de tokens (caracteres ÷ 4, aproximada).
 - **Códigos de salida:** 0 armado · 1 se negó · 2 problema de uso o del entorno (no existe la tarjeta, no hay git, no se pudo escribir).
@@ -116,7 +117,7 @@ Trae, en este orden (el que fija `docs/00-LEEME-IA.md`):
 Para crear tu `~/.metodo-ia.json` una sola vez (PowerShell; cambia la terminal si usas otra):
 
 ```powershell
-@{ terminal = "PowerShell"; carpeta_parches = "$env:USERPROFILE\Downloads" } | ConvertTo-Json | Set-Content -Encoding utf8 "$env:USERPROFILE\.metodo-ia.json"
+@{ terminal = "PowerShell"; carpeta_parches = "$env:USERPROFILE\Downloads"; perfil = "chat-web" } | ConvertTo-Json | Set-Content -Encoding utf8 "$env:USERPROFILE\.metodo-ia.json"
 ```
 
 ## aplicar.py

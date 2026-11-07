@@ -202,6 +202,41 @@ class Armado(unittest.TestCase):
         t = r.armar("T-001").texto
         self.assertLess(posicion(t, "### docs/00-LEEME-IA.md"), posicion(t, "### docs/modelo.md"))
 
+    def test_sin_perfil_declarado_viaja_el_que_no_supone_ningun_acceso(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        r.poner("docs/perfiles/chat-web.md", "# Perfil chat-web\n")
+        t = r.armar("T-001").texto
+        self.assertIn("### docs/perfiles/chat-web.md", t)
+        self.assertIn("- Perfil: chat-web", t)
+
+    def test_el_perfil_declarado_decide_que_anexo_viaja(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        r.poner("docs/perfiles/chat-web.md", "# Perfil chat-web\n")
+        r.poner("docs/perfiles/agente.md", "# Perfil agente\n")
+        (r.home / ".metodo-ia.json").write_text('{"perfil": "agente"}', encoding="utf-8")
+        t = r.armar("T-001").texto
+        self.assertIn("### docs/perfiles/agente.md", t)
+        self.assertNotIn("### docs/perfiles/chat-web.md", t)
+        self.assertIn("- Perfil: agente", t)
+
+    def test_un_perfil_que_no_existe_se_avisa_y_no_deja_el_bundle_sin_anexo(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        r.poner("docs/perfiles/chat-web.md", "# Perfil chat-web\n")
+        (r.home / ".metodo-ia.json").write_text('{"perfil": "telepatia"}', encoding="utf-8")
+        res = r.armar("T-001")
+        self.assertTrue(hay(res.avisos, "no es un perfil"), res.avisos)
+        self.assertIn("### docs/perfiles/chat-web.md", res.texto)
+
+    def test_si_falta_el_anexo_del_perfil_se_avisa(self):
+        r = Repo(self)
+        r.tarjeta("T-001", depende="—", tocar="src/a.py")
+        res = r.armar("T-001")
+        self.assertTrue(hay(res.avisos, "el bundle va sin el anexo del perfil"), res.avisos)
+        self.assertEqual(res.negativas, [], "falta un anexo, no las reglas: no es para negarse")
+
     def test_los_comandos_del_proyecto_viajan_con_las_reglas_cuando_ya_existen(self):
         r = Repo(self)
         r.tarjeta("T-001", depende="—", tocar="src/a.py")

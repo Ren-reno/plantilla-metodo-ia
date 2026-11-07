@@ -35,6 +35,17 @@ Las cuatro etapas de arriba son el camino **completo**. Pero no es lo mismo cons
 - **Las tarjetas se desechan al cerrar la tarea.** Su historia queda en git y en `docs/plan/reportes/`, y la traza «qué tarea cubre qué» queda en el backlog (o, en un cambio, en su mini-diseño).
 - **Una app que ya existe** (por ejemplo CrafTerraria): se documenta solo lo que se toca; el primer cambio sobre un área crea el RF o la sección de `modelo.md` de esa área. *(Pendiente: copiar el esqueleto del método a un repo que ya existe.)*
 
+## Elegir el perfil
+
+El camino dice **cuánto proceso** lleva el trabajo. El perfil dice **quién lo ejecuta**, y es una pregunta aparte:
+
+| Perfil | Cuándo | Qué cambia |
+|---|---|---|
+| `chat-web` | Pegas el bundle en una conversación que no ve tu repo | Te devuelve parche, reporte y comandos listos para pegar; tú los ejecutas |
+| `agente` | El LLM tiene acceso a tu repo y a tu terminal | Edita en local y te deja un diff, el reporte y la evidencia de lo que corrió; no te pide que copies comandos que él puede ejecutar |
+
+Lo declaras una vez en `~/.metodo-ia.json` (`"perfil": "chat-web"` o `"agente"`); `bundle.py` mete en cada bundle el anexo que toca, y sin declararlo asume `chat-web`, que es el que no supone ningún acceso. *Para qué:* el método, la evidencia y el cierre son los mismos en los dos; lo único que cambia es cómo llega el trabajo. Antes solo estaba escrito el flujo de chat, y un agente tenía que fingir que era un chat: producía un parche y un bloque de comandos para que otro los aplicara, teniendo la terminal delante.
+
 ## Qué funciona hoy y qué falta
 
 Las siete herramientas están implementadas: `init_diseno.py`, `init_plan.py`, `bundle.py`, `aplicar.py`, `cerrar.py`, `validar.py` y `comprobar.py`. Sus opciones están en `tools/README.md`. El ciclo completo se recorrió una vez en un piloto; una vez no valida el método. El mini-diseño de cambios sigue siendo un documento manual; no hay instalador del método para repos existentes.
@@ -118,7 +129,9 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 
 **Tarea.** Pega el bundle debajo de este texto:
 
-> Implementa la tarea de este bundle siguiendo las reglas de `00-LEEME-IA.md`. Responde solo con los tres bloques: parche, reporte y comandos.
+> Implementa la tarea de este bundle siguiendo las reglas de `00-LEEME-IA.md` y entregando como dice el anexo de perfil que viene con ellas.
+
+(En `chat-web` eso son los tres bloques: parche, reporte y comandos. En `agente`, los cambios aplicados con su diff, el reporte y la evidencia de lo que ejecutó.)
 
 **Tarea en modo estricto** (la tarjeta dice `Modo: estricto`; la explicación está más abajo). Pega el bundle debajo de uno de estos textos, según la fase. En la fase 2, arma el bundle con `python tools/bundle.py T-007 --parche2`: suma los tests del parche 1.
 
