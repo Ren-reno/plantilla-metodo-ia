@@ -44,8 +44,25 @@
 
 ## Alcance (dentro / fuera)
 
+<!--
+  Primero la hipótesis, después el recorrido mínimo, y solo entonces dentro/fuera. Contar toda la
+  visión no es un error: permite ver pronto las decisiones caras. El error es que todo lo contado
+  se convierta en requisito del primer lanzamiento. Lo que va a «Diferido» se queda como una línea
+  y NO se escribe como ### RF-NNN: el bloque de requisito es lo que arrastra cobertura, matriz y
+  tarjetas. Dividir un proyecto grande en tarjetas pequeñas no hace pequeño su MVP.
+-->
+
+**Qué queremos aprender**
+
+- Hipótesis: «quién tiene el problema, cómo lo resuelve hoy y qué resultado observable indicaría que esto aporta valor»
+- Cómo lo comprobaremos: «qué hará esa persona con datos representativos, qué observará, y qué evidencia justificaría continuar, ajustar o descartar». Sin umbrales inventados: se acuerdan según el problema.
+- Recorrido mínimo: «el camino más corto de principio a fin que permite observar ese resultado»
+
+Para cada funcionalidad candidata, pregunta si quitarla impide validar la hipótesis. Si no la impide, va a «Diferido» con su motivo. Clasifica lo que queda dentro en: indispensable para validar · habilitador técnico necesario · riesgo que exige un ensayo · mejora posterior. Un servidor en verde o una base de datos vacía son habilitadores, no un MVP útil.
+
 - Dentro: «…»
 - Fuera: «lo que explícitamente no se hará»
+- Diferido: «los deseos que no entran en este recorrido, una línea cada uno con su motivo. No se detallan como requisitos ni se planifican todavía; se conservan para no perderlos y para ver qué decisiones de hoy los abaratan o los encarecen.»
 
 **Revisión para planificar**
 

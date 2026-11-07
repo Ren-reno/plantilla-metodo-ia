@@ -187,6 +187,7 @@ Comprueba:
 3. **Matriz de cobertura (`docs/plan/cobertura.md`):** verifica que la tabla escrita coincida con lo declarado en el backlog (sin tareas inexistentes, sin omisiones y respetando los criterios a los que cada RF aporta).
 4. **Tarjetas de `docs/plan/tareas/`:**
    - **Máximo 4 criterios de aceptación (D16):** cada tarjeta debe tener entre 1 y 4 criterios; si pasa de 4, el arnés exige partirla o subir de camino.
+   - **`Peso:`, si la tarjeta lo declara:** avisa cuando declara dos o más resultados independientes, porque la regla de partición dice partir la tarea. Es **aviso**, no error: partirla o conservarla entera lo decide la persona, y declarar el peso es opcional en esta versión. El número de criterios no mide esfuerzo (en el piloto, cuatro criterios produjeron 17 archivos y 898 inserciones), y se cumple comprimiendo varias comprobaciones en una viñeta; por eso lo que se cuenta son resultados, fronteras, decisiones nuevas y preparación de entorno.
    - **`Fuera de alcance:` obligatorio (D16):** delimita explícitamente lo que no se construye para cortar código innecesario.
    - **Coherencia con el backlog:** `Depende de:` y `Cubre:` de la tarjeta deben ser idénticos a los de su línea del backlog.
    - **Tarjetas de refactor (`REF-NN`, D37):** rechaza rutas en `tests/` y `docs/`; no comprueba que cualquier otra ruta sea código de producción.

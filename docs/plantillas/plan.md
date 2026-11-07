@@ -3,8 +3,10 @@
   Los títulos `## Backlog`, `## Matriz de cobertura` y `## Tarjetas de la ola N` son exactos: las herramientas los buscan.
   Lo que va entre «» se reemplaza. Borra este comentario en el plan real.
 
-  - Ola = rebanada. El backlog trae TODAS las tareas, una línea cada una; solo la ola actual trae tarjetas completas,
-    escritas con el código real a la vista. Las demás tareas viven solo como línea hasta que les llega el turno.
+  - Ola = rebanada. El backlog trae TODAS las tareas del alcance aprobado, una línea cada una; solo la ola actual trae
+    tarjetas completas, escritas con el código real a la vista. Las demás viven solo como línea hasta que les llega el
+    turno. Lo que el diseño dejó en «Diferido» no entra en el backlog: todavía no tiene requisitos ni tareas.
+  - La rebanada 1 es el recorrido mínimo de la hipótesis, entero y nada más que él.
   - Fuente: versión y alcance de diseño confirmados, catálogo de actores, experiencia si aplica e inventario de diagramas.
     La revisión humana comprueba esta condición; los scripts no certifican aprobación visual o calidad del diseño.
   - Una rebanada con UI termina con recorrido integrado y prueba de uso. Sus tarjetas pueden separar capas técnicas.

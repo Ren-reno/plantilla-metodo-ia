@@ -13,7 +13,7 @@ Separa hechos, supuestos y propuestas. No inventes cifras, actores ni funcionali
 | Paso | Trabajo | Condición para avanzar |
 |---|---|---|
 | 1. Problema | Identificar usuarios, situación actual, dificultad y resultado esperado. | La persona reconoce el problema y aporta un ejemplo concreto. |
-| 2. Alcance | Delimitar dentro/fuera y elegir el primer recorrido útil, con comienzo y resultado observable. | Se entiende qué se entrega y qué se pospone. |
+| 2. Alcance | Formular qué se quiere aprender, elegir el recorrido mínimo que lo comprueba y delimitar dentro/fuera/diferido. | La hipótesis está escrita, y se entiende qué se entrega, qué se pospone y por qué. |
 | 3. Comportamiento | Definir actores, roles, requisitos, acciones, navegación y errores. | Las acciones importantes tienen resultado y recuperación definidos. |
 | 4. Apariencia, si hay UI | Describir pantallas y elegir una dirección visual con contenido realista. | Hay una referencia identificada y reglas comunes para otras pantallas. |
 | 5. Prueba del recorrido | Usar un prototipo con datos simulados cuando haya interacción importante; revisar un caso normal y un error relevante. | Se comprende el recorrido; se registran observaciones, límites y correcciones. |
@@ -23,6 +23,8 @@ Separa hechos, supuestos y propuestas. No inventes cifras, actores ni funcionali
 Los pasos permiten volver atrás. Investiga una restricción técnica crítica desde el inicio. Una app sin interfaz gráfica usa contratos y ejemplos de solicitudes, respuestas o comandos. Para una pantalla informativa sencilla puede bastar una maqueta revisada; registra el motivo. Una interacción importante aún no probada queda como riesgo o exploración pendiente, nunca como verificada.
 
 Las decisiones funcionales y visuales evolucionan juntas. El prototipo sirve para aprender: indica qué está simulado. Su código se revisa y prueba antes de reutilizarlo en producción.
+
+**Contar toda la visión no es un error; convertirla entera en requisitos sí.** Pregunta por el producto futuro desde el principio: es lo que permite ver temprano las decisiones caras, como una app móvil o una sincronización. Pero solo lo que hace falta para comprobar la hipótesis se escribe como `### RF-NNN` en el diseño. Lo demás va a «Diferido» del alcance, una línea por deseo, con su motivo. El bloque de requisito es lo que arrastra cobertura, matriz y tarjetas, así que un deseo escrito como RF ya está, de hecho, planificado. Dividir un proyecto grande en tarjetas pequeñas no hace pequeño su MVP.
 
 ## Actores y roles
 
@@ -115,12 +117,14 @@ El bundle incluye texto de `Leer:` y `Tocar:`; omite binarios y no garantiza que
 
 ## Condiciones de salida
 
-Antes del plan comprueba problema y caso real, alcance, actores y roles aplicables, reglas con ejemplos, experiencia revisada, diagramas necesarios, viabilidad y operación mínima. Declara también **quién instalará esto y en qué plataformas**: `solo-yo`, `mis-dispositivos` u `otras-personas`, según la etapa 5 de [la guía de trabajo](COMO-TRABAJAR.md). No es un trámite para después: un empaquetado, una migración de datos o un contrato de sincronización son tareas del plan, y decidirlo al final obliga a rehacerlo. Cada resultado importante debe tener evidencia de aceptación prevista: tests, revisión visual o prueba humana. En este momento se planifican esas comprobaciones; no se afirma haber ejecutado tests de una app que aún no existe.
+Antes del plan comprueba problema y caso real, **hipótesis y recorrido mínimo escritos**, alcance con su lista de diferidos, actores y roles aplicables, reglas con ejemplos, experiencia revisada, diagramas necesarios, viabilidad y operación mínima. Declara también **quién instalará esto y en qué plataformas**: `solo-yo`, `mis-dispositivos` u `otras-personas`, según la etapa 5 de [la guía de trabajo](COMO-TRABAJAR.md). No es un trámite para después: un empaquetado, una migración de datos o un contrato de sincronización son tareas del plan, y decidirlo al final obliga a rehacerlo. Cada resultado importante debe tener evidencia de aceptación prevista: tests, revisión visual o prueba humana. En este momento se planifican esas comprobaciones; no se afirma haber ejecutado tests de una app que aún no existe.
 
 Registra en «Alcance (dentro / fuera)» del diseño:
 
 ```text
 Versión revisada: [diseño y complementos].
+Hipótesis y recorrido mínimo: [qué se quiere aprender y el camino más corto que lo comprueba].
+Diferido: [deseos que no entran, con su motivo].
 Alcance listo para planificar: [recorridos].
 Evidencia revisada: [prototipo, imágenes, ejemplos o exploraciones].
 Pendientes: [duda, impacto, cuándo resolverla y si bloquea].
