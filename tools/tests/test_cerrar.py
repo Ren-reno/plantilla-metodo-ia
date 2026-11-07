@@ -355,7 +355,7 @@ class Banderas(unittest.TestCase):
     def test_un_cierre_limpio_no_trae_banderas_ni_avisos(self):
         r = Repo(self)
         r.trabajo_de_t001()
-        c = r.cerrar()
+        c = r.cerrar(llm="Claude")  # un cierre limpio declara quien hizo la tarea: sin --llm hay aviso
         self.assertEqual((c.codigo, c.negativas, c.errores, c.banderas, c.avisos), (0, [], [], [], []))
         self.assertEqual(c.filas["T-001"]["notas"], "")
 
@@ -1066,6 +1066,87 @@ class LineaDeComandos(unittest.TestCase):
         self.reporte_en_raiz(r)
         p = r.cerrar_cli("T-001", "reporte.md", env={"PYTHONIOENCODING": "ascii"})
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+
+
+# ---- trazabilidad del cierre: que commit y que LLM se anotan -------------------------------------
+class Trazabilidad(unittest.TestCase):
+    """Del piloto (H-28/H-29): ESTADO.md anoto el commit documental en vez del de la implementacion, y
+    la columna LLM salio vacia. Las dos cosas se ven ahora al cerrar, que es cuando se pueden arreglar."""
+
+    def corto(self, r, ref="HEAD"):
+        return subprocess.run(["git", "rev-parse", "--short=7", ref], cwd=str(r.dir), capture_output=True,
+                              text=True).stdout.strip()
+
+    def test_por_defecto_anota_head(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        self.assertEqual(r.cerrar(llm="Claude").filas["T-001"]["commit"], self.corto(r))
+
+    def test_commit_anota_el_que_le_digo_y_no_head(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        implementacion = self.corto(r)
+        r.trabajo({"NOTAS.md": "apuntes"}, "docs: apuntes")      # el commit documental de despues
+        c = r.cerrar(llm="Claude", commit="HEAD~1")
+        self.assertEqual(c.filas["T-001"]["commit"], implementacion)
+        self.assertNotEqual(c.filas["T-001"]["commit"], self.corto(r))
+
+    def test_avisa_cuando_el_commit_anotado_no_toca_la_tarea(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        r.trabajo({"NOTAS.md": "apuntes"}, "docs: apuntes")
+        c = r.cerrar(llm="Claude")                               # HEAD es el commit documental
+        self.assertTrue(hay(c.avisos, "no cambió ningún archivo de «Tocar:»"), f"salió: {c.avisos}")
+
+    def test_no_avisa_cuando_el_commit_anotado_si_toca_la_tarea(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar(llm="Claude")
+        self.assertFalse(hay(c.avisos, "no cambió ningún archivo"), f"salió: {c.avisos}")
+
+    def test_un_commit_que_no_existe_es_problema_de_entorno(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar(llm="Claude", commit="nada")
+        self.assertEqual(c.codigo, 2)
+        self.assertTrue(hay(c.negativas, "no encuentro el commit «nada»"), f"salió: {c.negativas}")
+
+    def test_un_commit_que_parece_opcion_es_problema_de_entorno(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar(llm="Claude", commit="--output=algo")
+        self.assertEqual(c.codigo, 2)
+        self.assertTrue(hay(c.negativas, "--commit espera un commit"), f"salió: {c.negativas}")
+
+    def test_sin_llm_avisa_de_la_celda_vacia(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar()
+        self.assertTrue(hay(c.avisos, "nadie lo anotó"), f"salió: {c.avisos}")
+        self.assertEqual(c.filas["T-001"]["llm"], "")
+
+    def test_con_llm_no_avisa_y_lo_anota(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar(llm="Claude")
+        self.assertFalse(hay(c.avisos, "nadie lo anotó"), f"salió: {c.avisos}")
+        self.assertEqual(c.filas["T-001"]["llm"], "Claude")
+
+    def test_en_un_reintento_no_vuelve_a_avisar_si_ya_estaba_anotado(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        r.aplicar(r.cerrar(llm="Claude"))
+        c = r.cerrar(reintento=True)                             # sin --llm, pero la celda ya tiene valor
+        self.assertFalse(hay(c.avisos, "nadie lo anotó"), f"salió: {c.avisos}")
+        self.assertEqual(c.filas["T-001"]["llm"], "Claude")
+
+    def test_hecha_no_acepta_commit(self):
+        r = RepoCli(self)      # esta prueba va por la linea de comandos: el guardia esta en main()
+        r.trabajo_de_t001()
+        p = r.cerrar_cli("T-001", "--hecha", "--commit", "HEAD")
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("--hecha se usa solo", p.stdout + p.stderr)
+
 
 
 if __name__ == "__main__":
