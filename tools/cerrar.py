@@ -333,13 +333,72 @@ def leer_estado(texto):
     return orden, filas
 
 
-def escribir_estado(nombre, orden, filas):
+def guia_de_estado(m):
+    """Tres líneas: en qué etapa está el proyecto, cuál es el siguiente comando y qué espera tu decisión.
+
+    Todo se deriva de lo que ya hay en el repo, así que no añade ningún archivo ni ninguna
+    ceremonia. Son tres a propósito: si crecen, esto deja de ser una guía y se convierte en
+    otro informe que se desactualiza. Ninguna línea puede contener «|»: las ignora leer_estado.
+    """
+    tareas = [t for t in m.orden if t.startswith("T-")]
+    estado_de = lambda t: m.filas.get(t, {}).get("estado", "pendiente")  # noqa: E731
+    del_backlog = m.backlog.tareas if m.backlog is not None else {}
+    pendientes = [t for t in tareas if estado_de(t) != "hecha"]
+
+    if not pendientes:
+        etapa = "5. Entrega y operación, porque todas las tareas del backlog están hechas"
+    else:
+        rebs = [del_backlog[t]["reb"] for t in pendientes if del_backlog.get(t, {}).get("reb")]
+        total = len(m.backlog.rebanadas) if m.backlog is not None else 0
+        etapa = "4. Código" + (f", rebanada {min(rebs)} de {total}" if rebs and total else "")
+
+    en_revision = [t for t in tareas if estado_de(t) == "en revisión"]
+    parciales = [t for t in tareas if estado_de(t) == "parcial"]
+    if en_revision:
+        t = en_revision[0]
+        siguiente = (f"mira el CI de {m.filas[t]['commit'] or 'su commit'} y, si está verde, "
+                     f"ciérrala con «python tools/cerrar.py {t} --hecha»")
+    elif parciales:
+        t = parciales[0]
+        siguiente = f"falta el parche 2 de {t}: «python tools/bundle.py {t} --parche2»"
+    elif not pendientes:
+        siguiente = "comprueba la entrega con «python tools/comprobar.py entrega» y publica la versión"
+    else:
+        libres = [t for t in pendientes if estado_de(t) == "pendiente"
+                  and all(estado_de(d) == "hecha" for d in del_backlog.get(t, {}).get("depende", []))]
+        con_tarjeta = [t for t in libres if (m.raiz / bd.REL_TAREAS / f"{t}.md").is_file()]
+        if con_tarjeta:
+            siguiente = f"«python tools/bundle.py {con_tarjeta[0]}»"
+        elif libres:
+            siguiente = (f"{libres[0]} está desbloqueada pero no tiene tarjeta: escribe las de la ola "
+                         "siguiente en el chat de hito")
+        else:
+            siguiente = "ninguna tarea está desbloqueada: revisa «Depende de:» en docs/plan/backlog.md"
+
+    propuestas = []
+    for archivo, (num, _slug) in sorted(adrs_existentes(m.raiz).items()):
+        try:
+            texto = (m.raiz / REL_DECISIONES / archivo).read_bytes().decode("utf-8-sig")
+        except OSError:
+            continue
+        if leer_adr(texto, num)[2] == "propuesta":
+            propuestas.append(f"ADR-{num}")
+    decision = ("ninguna" if not propuestas else
+                f"{', '.join(propuestas)} siguen en «propuesta»: acéptalas o recházalas, porque "
+                "bundle.py se niega con cualquier tarjeta que las cite")
+
+    return [f"- **Etapa:** {etapa}", f"- **Siguiente:** {siguiente}", f"- **Tu decisión:** {decision}"]
+
+
+def escribir_estado(nombre, orden, filas, guia=()):
     tareas = [t for t in orden if t.startswith("T-")]
     hechas = sum(1 for t in tareas if filas[t]["estado"] == "hecha")
     lineas = [f"# Estado del plan — {nombre}", "",
               "> Generado por `tools/cerrar.py`. No se edita a mano: cualquier cambio se pierde.", "",
-              f"Avance: {hechas} de {len(tareas)} {'tarea' if len(tareas) == 1 else 'tareas'} hechas.", "",
-              "| Tarea | Estado | LLM | Commit | Notas |", "|---|---|---|---|---|"]
+              f"Avance: {hechas} de {len(tareas)} {'tarea' if len(tareas) == 1 else 'tareas'} hechas.", ""]
+    if guia:
+        lineas += list(guia) + [""]
+    lineas += ["| Tarea | Estado | LLM | Commit | Notas |", "|---|---|---|---|---|"]
     for tid in orden:
         f = filas[tid]
         lineas.append(f"| {tid} | {f['estado']} | {_celda(f['llm'])} | {_celda(f['commit'])} | {_celda(f['notas'])} |")
@@ -633,7 +692,7 @@ def _planear_cierre(m, c, reporte, nombre_reporte, mover, parcial, reintento, de
     indice = generar_indice(raiz, propuestas)
     if indice is not None:
         c.escrituras.append((REL_INDICE, indice))
-    c.escrituras.append((REL_ESTADO, escribir_estado(m.nombre, m.orden, m.filas)))
+    c.escrituras.append((REL_ESTADO, escribir_estado(m.nombre, m.orden, m.filas, guia_de_estado(m))))
     if mover:
         c.borrar.append(mover)
     return c
@@ -661,7 +720,7 @@ def _planear_hecha(m, c):
     actual_indice = (raiz / REL_INDICE).read_bytes().decode("utf-8-sig") if (raiz / REL_INDICE).is_file() else None
     if indice is not None and indice != actual_indice:
         c.escrituras.append((REL_INDICE, indice))
-    c.escrituras.append((REL_ESTADO, escribir_estado(m.nombre, m.orden, m.filas)))
+    c.escrituras.append((REL_ESTADO, escribir_estado(m.nombre, m.orden, m.filas, guia_de_estado(m))))
     return c
 
 

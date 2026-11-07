@@ -17,7 +17,7 @@ Si necesitas saber **X**, mira **Y**:
 | Por qué se hizo un cambio y cómo se pensó (su mini-diseño) | `cambios/` |
 | Qué datos maneja | `modelo.md` y `diagramas/` |
 | Cómo se comunican las partes | `contratos/` |
-| Qué está hecho y qué falta | `plan/ESTADO.md` |
+| Qué está hecho, qué falta y **cuál es el siguiente comando** | `plan/ESTADO.md`: abre con etapa, siguiente acción y la decisión que te espera |
 | Qué tareas forman el plan y qué cubre cada una | `plan/backlog.md` y `plan/cobertura.md` |
 | Cómo escribir código y qué comandos usar | `00-LEEME-IA.md` |
 | Cómo trabajar con este repo (guía para ti) | `COMO-TRABAJAR.md` |

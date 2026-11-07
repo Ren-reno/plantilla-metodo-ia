@@ -151,6 +151,8 @@ La skill externa `puml-diagramas` es opcional; debe seguir el inventario y las d
 
 Si la tarjeta dice `Modo: estricto`, la tarea son dos parches: mira «Modo estricto» más abajo.
 
+**Si te pierdes en cualquier punto del ciclo, abre `docs/plan/ESTADO.md`.** Sus tres primeras líneas dicen en qué etapa estás, cuál es el siguiente comando exacto y qué decisión está esperándote. Las escribe `cerrar.py` con cada cierre, a partir de lo que ya hay en el repo. *Para qué:* no tener que reconstruir la conversación para saber qué sigue.
+
 ### El bloque de comandos, línea por línea
 
 Ejemplo en PowerShell. El LLM te lo entrega ya con tus rutas y el nombre real del parche.
