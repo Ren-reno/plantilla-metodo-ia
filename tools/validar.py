@@ -99,6 +99,46 @@ def detectar_ciclos(grafo: dict[str, list[str]]) -> list[list[str]]:
     return ciclos
 
 
+RE_CAMBIO = re.compile(r"^docs/cambios/\d{4}-[^/]+\.md$")
+
+
+def cambio_que_lista(raiz: Path, tid: str, items_leer) -> str | None:
+    """La ruta del mini-diseño de cambio que la tarjeta cita y que la lista en «## Tarjetas», o None.
+
+    El camino «cambio» de la guía deja la traza «qué tarea cubre qué» en el mini-diseño y no en el
+    backlog, para que una funcionalidad de una página no obligue a replanificar el plan entero
+    (docs/COMO-TRABAJAR.md: «la traza queda en el backlog, o, en un cambio, en su mini-diseño»). Así
+    que esta comprobación busca la traza donde la guía dice que vive, en vez de exigir una línea de
+    backlog que ese camino no produce.
+
+    No es un permiso: si el mini-diseño existe pero no lista la tarjeta, devuelve None y la tarjeta
+    sigue siendo un huérfano. La traza tiene que estar en alguna parte.
+    """
+    for item in items_leer:
+        ruta = item.split("(")[0].strip().partition("#")[0].strip()
+        if not RE_CAMBIO.match(ruta):
+            continue
+        archivo = raiz / ruta
+        if not archivo.is_file():
+            continue
+        try:
+            lineas = archivo.read_bytes().decode("utf-8-sig").splitlines()
+        except OSError:
+            continue
+        tipos = idz.clasificar(lineas)
+        dentro = False
+        for i, linea in enumerate(lineas):
+            if tipos[i] != "t":
+                continue
+            enc = idz.RE_ENCABEZADO.match(linea)
+            if enc:
+                dentro = enc.group(2).strip().lower() == "tarjetas"
+                continue
+            if dentro and re.search(r"\b" + re.escape(tid) + r"\b", linea):
+                return ruta
+    return None
+
+
 def ruta_real(raiz: Path, rel: str) -> str | None:
     """La ruta tal como está escrita en el disco, o None si no existe.
 
@@ -364,13 +404,23 @@ class Validador:
         rfs_cubiertos = set()
         criterios_cubiertos = set()
 
-        for tid, t in tareas.items():
-            for tok in t["cubre"]:
+        def anotar_cobertura(tokens):
+            for tok in tokens:
                 norm_c = normalizar_criterio(tok)
                 if RE_ID_CRITERIO.match(norm_c):
                     criterios_cubiertos.add(norm_c)
                 if RE_ID_RF.match(tok):
                     rfs_cubiertos.add(tok)
+
+        for tid, t in tareas.items():
+            anotar_cobertura(t["cubre"])
+
+        # Una tarjeta que sale de un cambio no tiene línea de backlog, pero su «Cubre:» cuenta igual:
+        # si no, el RF que crea el cambio parecería huérfano y el camino «cambio» seguiría bloqueado
+        # por otra puerta. Se admite con la misma traza que el punto 3: su mini-diseño la lista.
+        for tid, t_card in self.tarjetas.items():
+            if tid not in tareas and cambio_que_lista(self.raiz, tid, t_card["leer"]) is not None:
+                anotar_cobertura(t_card["cubre"])
 
         # 1. Comprobar RFs huérfanos
         for rf_id, rf_info in sorted(self.rfs_diseno.items()):
@@ -469,7 +519,11 @@ class Validador:
             # 3. Coherencia con el backlog
             if RE_ID_TAREA.match(tid):
                 if tid not in tareas_backlog:
-                    self.error(f"{tid}: la tarjeta existe en docs/plan/tareas/, pero la tarea no está en el backlog.")
+                    if cambio_que_lista(self.raiz, tid, t_card["leer"]) is None:
+                        self.error(f"{tid}: la tarjeta existe en docs/plan/tareas/, pero la tarea no está en el "
+                                   "backlog ni la lista el «## Tarjetas» de un mini-diseño de docs/cambios/ que "
+                                   "ella cite en «Leer:». El camino «cambio» deja ahí su traza; el camino rápido "
+                                   "la registra en el backlog.")
                 else:
                     t_b = tareas_backlog[tid]
                     # Comparar Depende de

@@ -421,6 +421,89 @@ class TestValidadorBase(unittest.TestCase):
 
 
 # ---- CLI y Códigos de Salida ---------------------------------------------
+class TarjetasDeUnCambio(unittest.TestCase):
+    """D-05 del ensayo de entrega: el camino «cambio» de la guia deja la traza «que tarea cubre que» en
+    su mini-diseno y no en el backlog, para que una funcionalidad de una pagina no obligue a
+    replanificar. validar.py exigia la linea de backlog, asi que seguir la guia producia un error que
+    bloquea el CI. Ahora busca la traza donde la guia dice que vive, sin dejar de exigirla."""
+
+    CAMBIO = """# CAM-0001 · Historial de ejemplo
+> 2026-11-07 · app de prueba
+
+## Que se cambia
+La app guarda algo.
+
+## Tarjetas
+- T-050
+"""
+
+    TARJETA = """# T-050 · Tarjeta de un cambio
+Estado: pendiente · Depende de: — · Cubre: RF-001
+Peso: 1 resultado · sin fronteras nuevas · 0 decisiones · sin preparacion de entorno
+Objetivo: la que sale del mini-diseno de un cambio.
+Leer (solo esto): docs/00-LEEME-IA.md · docs/cambios/0001-historial-de-ejemplo.md
+Tocar: src/libros/*
+Fuera de alcance: todo lo demas
+Criterios de aceptación:
+  - Hace lo suyo; evidencia: test.
+Comando de test: ver docs/00-LEEME-IA.md
+Entrega: un parche (git diff) + reporte + comandos para aplicar
+"""
+
+    def setUp(self):
+        self.repo = RepoTemporal(self)
+        self.repo.poblar_ejemplo()
+        self.repo.poner("docs/plan/tareas/T-050.md", self.TARJETA)
+
+    def errores(self):
+        val = va.Validador(self.repo.dir)
+        val.cargar()
+        return val.validar()[0]
+
+    def test_una_tarjeta_que_su_mini_diseno_lista_no_necesita_el_backlog(self):
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.assertFalse(hay(self.errores(), "T-050"), f"salio: {self.errores()}")
+
+    def test_si_el_mini_diseno_no_la_lista_sigue_siendo_huerfana(self):
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md",
+                        self.CAMBIO.replace("- T-050", "- T-999"))
+        self.assertTrue(hay(self.errores(), "T-050: la tarjeta existe"), f"salio: {self.errores()}")
+
+    def test_si_el_mini_diseno_no_existe_sigue_siendo_huerfana(self):
+        self.assertTrue(hay(self.errores(), "T-050: la tarjeta existe"), f"salio: {self.errores()}")
+
+    def test_una_tarjeta_sin_citar_ningun_cambio_sigue_siendo_huerfana(self):
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.repo.poner("docs/plan/tareas/T-050.md",
+                        self.TARJETA.replace(" · docs/cambios/0001-historial-de-ejemplo.md", ""))
+        self.assertTrue(hay(self.errores(), "T-050: la tarjeta existe"), f"salio: {self.errores()}")
+
+    RF_DEL_CAMBIO = """# RF-050 · Requisito que crea un cambio
+Aporta a: C1
+Criterios de aceptación:
+- Hace lo suyo; evidencia: test.
+"""
+
+    def test_un_rf_que_solo_cubre_la_tarjeta_de_un_cambio_no_es_huerfano(self):
+        # La otra puerta del mismo problema: el camino «cambio» crea un RF, y el bucle de cobertura
+        # solo miraba las tareas del backlog, asi que ese RF parecia huerfano y el error bloqueaba igual.
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.repo.poner("docs/requisitos/RF-050-de-un-cambio.md", self.RF_DEL_CAMBIO)
+        self.repo.poner("docs/plan/tareas/T-050.md", self.TARJETA.replace("Cubre: RF-001", "Cubre: RF-050"))
+        self.assertFalse(hay(self.errores(), "RF-050"), f"salio: {self.errores()}")
+
+    def test_un_rf_sin_nadie_que_lo_cubra_sigue_siendo_huerfano(self):
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.repo.poner("docs/requisitos/RF-050-de-un-cambio.md", self.RF_DEL_CAMBIO)
+        self.assertTrue(hay(self.errores(), "RF-050"), f"salio: {self.errores()}")
+
+    def test_el_nombre_de_la_tarea_no_se_confunde_con_otro_mas_largo(self):
+        # «- T-0501» en la seccion Tarjetas no vale como traza de T-050.
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md",
+                        self.CAMBIO.replace("- T-050", "- T-0501"))
+        self.assertTrue(hay(self.errores(), "T-050: la tarjeta existe"), f"salio: {self.errores()}")
+
+
 class TestLineaDeComandos(unittest.TestCase):
     def setUp(self):
         self.repo = RepoTemporal(self)
