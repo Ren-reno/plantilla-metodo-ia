@@ -352,6 +352,27 @@ class Pasos(unittest.TestCase):
         r.poner("tests/test_migracion.py", "RUTA = 'tests/fixtures/datos'\n")
         self.assertEqual(r.paso("datos")["estado"], co.OK)
 
+    def test_una_prueba_que_nombra_el_archivo_de_datos_tambien_cuenta(self):
+        # D-06 del ensayo de entrega. Una prueba portable arma la ruta por segmentos y relativa a si
+        # misma, asi que no contiene la cadena «tests/fixtures/datos», pero si nombra el archivo que
+        # usa. Exigir solo la cadena literal dejaba dos salidas malas: una ruta relativa al directorio
+        # de trabajo, o la cadena escrita en un comentario para contentar la comprobacion.
+        cfg = config(datos={"version": 2, "fixtures": "tests/fixtures/datos"})
+        r = Repo(self, cfg)
+        r.poner("tests/fixtures/datos/v1-historial.json", '{"version": 1, "entradas": []}\n')
+        r.poner("tests/test_migracion.py",
+                'FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "datos"\n'
+                'V1 = FIXTURES / "v1-historial.json"\n')
+        res = r.paso("datos")
+        self.assertEqual(res["estado"], co.OK, res["detalle"])
+
+    def test_una_prueba_que_no_menciona_ni_la_ruta_ni_los_archivos_no_cuenta(self):
+        cfg = config(datos={"version": 2, "fixtures": "tests/fixtures/datos"})
+        r = Repo(self, cfg)
+        r.poner("tests/fixtures/datos/v1-historial.json", '{"version": 1, "entradas": []}\n')
+        r.poner("tests/test_otra_cosa.py", "def test_nada():\n    assert True\n")
+        self.assertEqual(r.paso("datos")["estado"], co.FALLO)
+
     def test_datos_mal_declarados_se_rechazan(self):
         r = Repo(self, config(datos={"version": 0, "fixtures": "x"}))
         self.assertIn("«datos» necesita", r.correr("rapido").stdout)

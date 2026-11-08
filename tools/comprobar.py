@@ -470,25 +470,38 @@ def paso_datos(ctx: Contexto, _nombre: str) -> dict:
         return resultado("datos", FALLO, f"faltan datos de ejemplo de {', '.join(faltan)} en {rel_fix}: "
                                          "una actualización que no se prueba con datos viejos es la "
                                          "forma más fácil de perder los del usuario")
-    if not alguna_prueba_menciona(ctx.raiz, rel_fix):
-        return resultado("datos", FALLO, f"ninguna prueba de tests/ menciona {rel_fix}: los datos "
-                                         "viejos están, pero nadie los usa para comprobar la migración")
+    nombres = sorted(p.name for p in carpeta.iterdir() if p.is_file())
+    if not alguna_prueba_menciona(ctx.raiz, rel_fix, *nombres):
+        return resultado("datos", FALLO, f"ninguna prueba de tests/ menciona {rel_fix} ni ninguno de sus "
+                                         "archivos: los datos viejos están, pero nadie los usa para "
+                                         "comprobar la migración")
     return resultado("datos", OK, f"datos en versión {version}, con ejemplos de las {version - 1} "
                                   "anteriores usados por alguna prueba")
 
 
-def alguna_prueba_menciona(raiz: Path, texto: str) -> bool:
+def alguna_prueba_menciona(raiz: Path, *textos: str) -> bool:
+    """¿Alguna prueba de tests/ menciona alguno de estos textos?
+
+    Se buscan la ruta declarada de los fixtures y también los nombres de los archivos que hay dentro.
+    Una prueba escrita de forma portable arma la ruta por segmentos y relativa a sí misma
+    —Path(__file__).parents[1] / "fixtures" / "datos"— así que no contiene la ruta literal, pero sí
+    nombra el archivo de datos que usa. Exigir solo la cadena literal dejaba dos salidas, las dos
+    malas: escribir una ruta relativa al directorio de trabajo, que se rompe según desde dónde corras
+    las pruebas, o poner la cadena en un comentario para contentar la comprobación.
+    """
     carpeta = raiz / "tests"
     if not carpeta.is_dir():
         return False
+    buscados = [x for x in textos if x]
     for p in carpeta.rglob("*"):
         if not p.is_file() or p.suffix.lower() in (".pyc", ".png", ".jpg", ".zip", ".sqlite3"):
             continue
         try:
-            if texto in p.read_text(encoding="utf-8", errors="replace"):
-                return True
+            contenido = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
+        if any(x in contenido for x in buscados):
+            return True
     return False
 
 
