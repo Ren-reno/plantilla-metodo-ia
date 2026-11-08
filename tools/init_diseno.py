@@ -108,6 +108,56 @@ def citas_de_reglas(texto):
     return vistos
 
 
+RE_MUEBLE = re.compile(r"[-*>#|·—–:.,;()\s]+")   # lo estructural de una línea: no es contenido
+
+
+def hueco_es_el_valor(linea):
+    """¿Un hueco «…» abre o cierra la línea, es decir, ocupa el lugar del valor de un campo?
+
+    En la plantilla el hueco es el valor y va en un extremo: «- Dentro: «…»»,
+    «### RF-001 · «Nombre del requisito»», ««describe el problema» presta libros». En prosa, las
+    comillas van dentro de la frase y hay texto a los dos lados. No es infalible en ninguno de los dos
+    sentidos —una frase que termina en algo citado se parece a un campo sin llenar— y por eso quien lo
+    usa no descarta ninguna línea: las clasifica.
+    """
+    huecos = list(RE_HUECO.finditer(linea))
+    if not huecos:
+        return False
+    abre = not RE_MUEBLE.sub("", linea[:huecos[0].start()])
+    cierra = not RE_MUEBLE.sub("", linea[huecos[-1].end():])
+    return abre or cierra
+
+
+def _numeros(indices, maximo=8):
+    """«3, 25, 67» a partir de índices de línea, que empiezan en 0. Corta si son muchos."""
+    numeros = ", ".join(str(i + 1) for i in indices[:maximo])
+    return numeros + (f" …y {len(indices) - maximo} más" if len(indices) > maximo else "")
+
+
+def aviso_de_huecos(lineas, tipos):
+    """Un solo aviso sobre las «» del documento, o None si no hay ninguna.
+
+    Uno por documento y no uno por línea. En el primer ensayo del perfil chat-web, un cierre real trajo
+    seis avisos idénticos, cinco de ellos sobre comillas de prosa correcta, y entre esos seis pasó
+    desapercibido un fallo de verdad: una decisión que se descartó en silencio. Un aviso que grita
+    siempre enseña a ignorar los avisos, así que este cuenta las dos clases y admite lo que no sabe
+    distinguir, en vez de callar unas líneas y arriesgarse a perder un campo sin llenar.
+    """
+    con_huecos = [i for i, l in enumerate(lineas) if tipos[i] == "t" and ("«" in l or "»" in l)]
+    if not con_huecos:
+        return None
+    sin_llenar = [i for i in con_huecos if hueco_es_el_valor(lineas[i])]
+    prosa = [i for i in con_huecos if i not in sin_llenar]
+    partes = []
+    if sin_llenar:
+        partes.append(f"{len(sin_llenar)} parece(n) campo(s) de la plantilla sin llenar, en la(s) línea(s) "
+                      + _numeros(sin_llenar))
+    if prosa:
+        partes.append(f"{len(prosa)} podría(n) ser comillas de tu prosa, en la(s) línea(s) " + _numeros(prosa))
+    return ("el documento trae «»: " + "; ".join(partes)
+            + ". Completa los campos que falten; si son comillas de tu prosa, ignora este aviso")
+
+
 def solo_huecos(texto, quitar=None):
     """¿Este texto es solo campos de la plantilla sin llenar?
 
@@ -445,11 +495,9 @@ class Diseno:
         if propuestas:
             self.aviso(0, f"{len(propuestas)} decisión(es) siguen en estado «propuesta»: acéptalas o "
                           "recházalas en bloque antes de cerrar el diseño")
-        sin_llenar = [i for i, l in enumerate(self.lineas) if self.tipos[i] == "t" and ("«" in l or "»" in l)]
-        for i in sin_llenar[:5]:
-            self.aviso(i + 1, "parece un campo de la plantilla sin llenar: " + self.lineas[i].strip()[:60])
-        if len(sin_llenar) > 5:
-            self.aviso(0, f"…y {len(sin_llenar) - 5} campo(s) más sin llenar")
+        aviso = aviso_de_huecos(self.lineas, self.tipos)
+        if aviso:
+            self.aviso(0, aviso)
 
     # ---- reparto ----------------------------------------------------------
     def reparto(self):

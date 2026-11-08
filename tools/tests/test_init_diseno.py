@@ -376,6 +376,52 @@ class ReglasDeclaradas(unittest.TestCase):
         self.assertEqual(idz.citas_de_reglas("no cita ninguna regla"), [])
 
 
+class AvisoDeHuecos(unittest.TestCase):
+    """E-01 del ensayo del perfil chat-web: el aviso de «campos sin llenar» se disparaba una vez por
+    linea en cualquier documento que usara «» como comillas espanolas, que es como las usa el metodo
+    entero. En un cierre real salieron seis avisos identicos, cinco de ellos sobre prosa correcta, y
+    entre esos seis paso desapercibido un fallo de verdad. Ahora es un aviso por documento, con las
+    lineas clasificadas en dos grupos y sin descartar ninguna."""
+
+    def aviso(self, texto):
+        lineas = texto.splitlines()
+        return idz.aviso_de_huecos(lineas, idz.clasificar(lineas))
+
+    def test_un_documento_sin_comillas_no_trae_aviso(self):
+        self.assertIsNone(self.aviso("# Titulo\n\nTexto normal, sin comillas de ningun tipo.\n"))
+
+    def test_un_solo_aviso_para_todas_las_lineas(self):
+        aviso = self.aviso("- Dentro: «…»\n- Fuera: «…»\n- Diferido: «…»\n")
+        self.assertIn("3 parece(n) campo(s) de la plantilla sin llenar", aviso)
+        self.assertIn("1, 2, 3", aviso)
+        self.assertNotIn("podría(n) ser comillas", aviso)
+
+    def test_separa_los_campos_sin_llenar_de_las_comillas_de_prosa(self):
+        aviso = self.aviso("- Dentro: «…»\nLa regla dice «45 s» cuando pasa algo, y la frase sigue.\n")
+        self.assertIn("1 parece(n) campo(s)", aviso)
+        self.assertIn("1 podría(n) ser comillas de tu prosa", aviso)
+
+    def test_no_cuenta_las_lineas_de_un_bloque_de_codigo(self):
+        self.assertIsNone(self.aviso("```\n- Dentro: «…»\n```\n"))
+
+    def test_corta_la_lista_cuando_son_muchas_lineas(self):
+        aviso = self.aviso("".join(f"- Campo {i}: «…»\n" for i in range(12)))
+        self.assertIn("12 parece(n) campo(s)", aviso)
+        self.assertIn("y 4 más", aviso)
+
+    def test_un_hueco_en_cualquiera_de_los_dos_extremos_es_el_valor(self):
+        for linea in ("- Dentro: «…»", "«describe el problema» presta libros",
+                      "### RF-001 · «Nombre del requisito»", "| ACT-001 | «nombre» | «tipo» |"):
+            with self.subTest(linea=linea):
+                self.assertTrue(idz.hueco_es_el_valor(linea))
+
+    def test_las_comillas_dentro_de_una_frase_no_son_el_valor(self):
+        for linea in ("La regla dice «45 s» y la frase sigue",
+                      "Si no la impide, va a «Diferido» con su motivo."):
+            with self.subTest(linea=linea):
+                self.assertFalse(idz.hueco_es_el_valor(linea))
+
+
 class SoloHuecos(unittest.TestCase):
     """El ayudante que distingue un hueco de la plantilla de una comilla española en prosa.
     Vive aquí porque init_diseno es el dueño de esa heurística; lo usan cerrar.py y validar.py."""

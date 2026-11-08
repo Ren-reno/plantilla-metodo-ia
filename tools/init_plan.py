@@ -548,11 +548,9 @@ class Plan:
             self.aviso(0, f"«Cubre:» cita requisitos sin archivo en docs/requisitos/: {detalle}")
 
     def _avisos_generales(self):
-        sin_llenar = [i for i, l in enumerate(self.lineas) if self.tipos[i] == "t" and ("«" in l or "»" in l)]
-        for i in sin_llenar[:5]:
-            self.aviso(i + 1, "parece un campo de la plantilla sin llenar: " + self.lineas[i].strip()[:60])
-        if len(sin_llenar) > 5:
-            self.aviso(0, f"…y {len(sin_llenar) - 5} campo(s) más sin llenar")
+        aviso = idz.aviso_de_huecos(self.lineas, self.tipos)
+        if aviso:
+            self.aviso(0, aviso)
 
     # ---- reparto ----------------------------------------------------------
     def choques(self, ctx, force=False):
