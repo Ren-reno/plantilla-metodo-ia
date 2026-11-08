@@ -147,11 +147,9 @@ class Reporte:
             self._decisiones()
         if "Mensaje de commit sugerido" in self.secciones:
             self._commit()
-        sin_llenar = [i for i, l in enumerate(self.lineas) if self.tipos[i] == "t" and ("«" in l or "»" in l)]
-        for i in sin_llenar[:5]:
-            self.avisos.append((i + 1, "parece un campo de la plantilla sin llenar: " + self.lineas[i].strip()[:60]))
-        if len(sin_llenar) > 5:
-            self.avisos.append((0, f"…y {len(sin_llenar) - 5} campo(s) más sin llenar"))
+        aviso = idz.aviso_de_huecos(self.lineas, self.tipos)
+        if aviso:
+            self.avisos.append((0, aviso))
 
     def _titulo(self):
         h1 = [h for h in self.heads if h.nivel == 1]
