@@ -404,13 +404,23 @@ class Validador:
         rfs_cubiertos = set()
         criterios_cubiertos = set()
 
-        for tid, t in tareas.items():
-            for tok in t["cubre"]:
+        def anotar_cobertura(tokens):
+            for tok in tokens:
                 norm_c = normalizar_criterio(tok)
                 if RE_ID_CRITERIO.match(norm_c):
                     criterios_cubiertos.add(norm_c)
                 if RE_ID_RF.match(tok):
                     rfs_cubiertos.add(tok)
+
+        for tid, t in tareas.items():
+            anotar_cobertura(t["cubre"])
+
+        # Una tarjeta que sale de un cambio no tiene línea de backlog, pero su «Cubre:» cuenta igual:
+        # si no, el RF que crea el cambio parecería huérfano y el camino «cambio» seguiría bloqueado
+        # por otra puerta. Se admite con la misma traza que el punto 3: su mini-diseño la lista.
+        for tid, t_card in self.tarjetas.items():
+            if tid not in tareas and cambio_que_lista(self.raiz, tid, t_card["leer"]) is not None:
+                anotar_cobertura(t_card["cubre"])
 
         # 1. Comprobar RFs huérfanos
         for rf_id, rf_info in sorted(self.rfs_diseno.items()):

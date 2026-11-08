@@ -478,6 +478,25 @@ Entrega: un parche (git diff) + reporte + comandos para aplicar
                         self.TARJETA.replace(" · docs/cambios/0001-historial-de-ejemplo.md", ""))
         self.assertTrue(hay(self.errores(), "T-050: la tarjeta existe"), f"salio: {self.errores()}")
 
+    RF_DEL_CAMBIO = """# RF-050 · Requisito que crea un cambio
+Aporta a: C1
+Criterios de aceptación:
+- Hace lo suyo; evidencia: test.
+"""
+
+    def test_un_rf_que_solo_cubre_la_tarjeta_de_un_cambio_no_es_huerfano(self):
+        # La otra puerta del mismo problema: el camino «cambio» crea un RF, y el bucle de cobertura
+        # solo miraba las tareas del backlog, asi que ese RF parecia huerfano y el error bloqueaba igual.
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.repo.poner("docs/requisitos/RF-050-de-un-cambio.md", self.RF_DEL_CAMBIO)
+        self.repo.poner("docs/plan/tareas/T-050.md", self.TARJETA.replace("Cubre: RF-001", "Cubre: RF-050"))
+        self.assertFalse(hay(self.errores(), "RF-050"), f"salio: {self.errores()}")
+
+    def test_un_rf_sin_nadie_que_lo_cubra_sigue_siendo_huerfano(self):
+        self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md", self.CAMBIO)
+        self.repo.poner("docs/requisitos/RF-050-de-un-cambio.md", self.RF_DEL_CAMBIO)
+        self.assertTrue(hay(self.errores(), "RF-050"), f"salio: {self.errores()}")
+
     def test_el_nombre_de_la_tarea_no_se_confunde_con_otro_mas_largo(self):
         # «- T-0501» en la seccion Tarjetas no vale como traza de T-050.
         self.repo.poner("docs/cambios/0001-historial-de-ejemplo.md",
