@@ -25,21 +25,23 @@ Un solo `git diff` en formato unificado:
 Un bloque listo para pegar, con la terminal y las rutas del «Entorno del usuario» del bundle. PowerShell no se detiene solo cuando falla un comando externo (un test, por ejemplo), así que cada paso lleva su freno: corre solo si el anterior salió bien. Modelo para PowerShell:
 
 ```powershell
+# Guarda primero el bloque 1 como "<carpeta de parches>\<tarea>-<tema>.patch": hasta entonces no existe.
 cd "<carpeta del repo>"
 git status --short   # debe salir vacío
 python tools/aplicar.py "<carpeta de parches>\<tarea>-<tema>.patch"
 if ($LASTEXITCODE -eq 0) { <comando de test de la tarjeta> }   # solo si la tarjeta lo trae
 if ($LASTEXITCODE -eq 0) { git add -A; if ($LASTEXITCODE -eq 0) { git commit -m "<mensaje de commit del reporte>" } }
-if ($LASTEXITCODE -eq 0) { git push }
+if ($LASTEXITCODE -eq 0) { if (git remote) { git push } else { Write-Host "Sin remoto: no hay nada que subir." } }
 if ($LASTEXITCODE -ne 0) { Write-Host "Algo falló: el bloque se detuvo ahí. Pega aquí lo que dice la terminal." }
 ```
 
 Reglas del bloque:
 
-- Tú propones el nombre del archivo (`<tarea>-<tema>.patch`) y lo usas igual en todos los comandos.
+- Tú propones el nombre del archivo (`<tarea>-<tema>.patch`) y lo usas igual en todos los comandos. **El bloque abre recordando guardarlo:** hasta que la persona copie el bloque 1 y lo guarde con ese nombre, el archivo no existe, y el bloque empezaría aplicando algo que no está.
 - Rutas siempre entre comillas.
 - El comando de test va entre `aplicar.py` y el commit. En el parche 1 estricto de Python lo ejecuta `aplicar.py --estricto`, y el commit va en un bloque aparte que la persona pega solo tras revisar el rojo. No uses `--estricto` para el parche 2, que debe pasar sus tests.
 - El mensaje de commit sale del reporte y es un commit convencional.
+- **El `push` comprueba que haya remoto.** Un repo recién creado desde la plantilla no tiene ninguno configurado: sin esa comprobación el `push` falla, y la última línea anuncia «Algo falló» sobre una aplicación que salió perfecta. Un rojo falso enseña lo mismo que un verde falso: a desconfiar del mensaje en vez de leerlo.
 - `git status --short` vacío al inicio es lo que hace seguro el `git add -A`: así solo entra lo del parche. En un reintento tras un test fallido, el parche anterior sigue aplicado sin guardar: `git status --short` listará sus archivos (cámbiale el comentario) y el commit guarda los dos parches juntos.
 
 Equivalentes para otras terminales:
@@ -50,7 +52,7 @@ Equivalentes para otras terminales:
 | CMD | `"%USERPROFILE%\Downloads\x.patch"` | `cd /d "<ruta>"` | `REM` |
 | Git Bash, macOS, Linux | `"$HOME/Downloads/x.patch"` (Linux en español: `"$HOME/Descargas/x.patch"`) | `cd "<ruta>"` | `#` |
 
-En CMD, Git Bash, macOS y Linux el mismo freno se logra uniendo los comandos con `&&`: se detienen en el primero que falla.
+En CMD, Git Bash, macOS y Linux el mismo freno se logra uniendo los comandos con `&&`: se detienen en el primero que falla. Ahí el `push` se condiciona igual a que exista remoto; en bash, `[ -n "$(git remote)" ] && git push`.
 
 ## Si falta el «Entorno del usuario»
 
