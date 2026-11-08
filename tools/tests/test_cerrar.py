@@ -1149,5 +1149,54 @@ class Trazabilidad(unittest.TestCase):
 
 
 
+# ---- decisiones que citan algo entre comillas -----------------------------------------------------
+class DecisionesConComillas(unittest.TestCase):
+    """Del ensayo del perfil chat-web: `cerrar.py` descartaba en silencio cualquier decision que
+    contuviera «», confundiendola con un campo de la plantilla sin llenar. La decision de ese ensayo
+    afectaba a otras tareas, y desaparecio: sin propuesta de ADR, sin bandera, y con ESTADO.md
+    anunciando «Tu decision: ninguna». El texto de abajo es el que llego de verdad."""
+
+    REAL = ("- Identificadores en español, docstrings en español con secciones «Parámetros / Devuelve / "
+            "Lanza», y tests importando `from src.duracion import ...`. Afecta a otras tareas.")
+
+    def test_una_decision_que_cita_entre_comillas_no_se_descarta(self):
+        r = ce.Reporte(reporte(decisiones=self.REAL))
+        self.assertEqual(len(r.decisiones), 1, f"salió: {r.decisiones}")
+        self.assertTrue(r.decisiones[0]["afecta"], "la frase «Afecta a otras tareas» estaba en la línea")
+
+    def test_la_vineta_en_blanco_de_la_plantilla_se_sigue_descartando(self):
+        r = ce.Reporte(reporte(decisiones="- «decisión» · Motivo: «por qué»"))
+        self.assertEqual(r.decisiones, [])
+
+    def test_descartar_una_decision_lo_dice(self):
+        r = ce.Reporte(reporte(decisiones="- «decisión» · Motivo: «por qué»"))
+        self.assertTrue(hay([m for _, m in r.avisos], "descarté una decisión"), f"salió: {r.avisos}")
+
+    def test_una_decision_entera_entre_comillas_se_descarta_con_aviso(self):
+        # Limite conocido y deliberado: no se distingue de un hueco. Antes desaparecia callando.
+        r = ce.Reporte(reporte(decisiones="- «usar SQLite en vez de Postgres»"))
+        self.assertEqual(r.decisiones, [])
+        self.assertTrue(hay([m for _, m in r.avisos], "descarté una decisión"), f"salió: {r.avisos}")
+
+    def test_solo_huecos_distingue_la_plantilla_de_la_prosa(self):
+        for texto in ("«decisión» · Motivo: «por qué»", "«decisión»", "  «x»  ", "«a» · Motivo: «b»"):
+            with self.subTest(texto=texto):
+                self.assertTrue(ce.solo_huecos(texto))
+        for texto in ("Usar «SQLite» porque cabe en un archivo", "Guardar fechas en UTC",
+                      "Docstrings con secciones «Parámetros / Devuelve» · Motivo: consistencia"):
+            with self.subTest(texto=texto):
+                self.assertFalse(ce.solo_huecos(texto))
+
+    def test_la_decision_con_comillas_vuelve_a_llegar_a_propuesta_de_adr(self):
+        r = Repo(self)
+        r.trabajo_de_t001()
+        c = r.cerrar(texto=reporte(decisiones=self.REAL), llm="Claude")
+        self.assertEqual(c.codigo, 0, f"negativas: {c.negativas} errores: {c.errores}")
+        self.assertEqual(len(c.adrs), 1, f"propuestas: {c.adrs}")
+        self.assertTrue(c.adrs[0].startswith("docs/decisiones/"), c.adrs[0])
+        self.assertTrue(hay(c.banderas, "decisión que afecta a otras tareas"), f"salió: {c.banderas}")
+
+
+
 if __name__ == "__main__":
     unittest.main()
