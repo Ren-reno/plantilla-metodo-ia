@@ -4,6 +4,7 @@ Correr desde la raíz del repo:
     python -m unittest discover -s tools/tests -v
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -328,6 +329,32 @@ class LineaDeComandos(unittest.TestCase):
         repo = self.preparar()
         r = repo.correr("DISENO.md", "--check", env={"PYTHONIOENCODING": "ascii"})
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+
+class SoloHuecos(unittest.TestCase):
+    """El ayudante que distingue un hueco de la plantilla de una comilla española en prosa.
+    Vive aquí porque init_diseno es el dueño de esa heurística; lo usan cerrar.py y validar.py."""
+
+    def test_un_hueco_solo_es_un_hueco(self):
+        for texto in ("«nombre de la app»", "  «x»  ", "«a» «b»", "", "   ", "«a» · «b»"):
+            with self.subTest(texto=texto):
+                self.assertTrue(idz.solo_huecos(texto))
+
+    def test_la_prosa_que_cita_entre_comillas_no_es_un_hueco(self):
+        for texto in ("la «vista previa» de un libro", "Usar «SQLite»", "sin comillas ninguna",
+                      "«todo» menos esto"):
+            with self.subTest(texto=texto):
+                self.assertFalse(idz.solo_huecos(texto))
+
+    def test_la_etiqueta_estructural_no_cuenta_como_contenido(self):
+        etiqueta = re.compile(r"\s*·\s*Motivo:\s*", re.IGNORECASE)
+        self.assertTrue(idz.solo_huecos("«decisión» · Motivo: «por qué»", etiqueta))
+        self.assertFalse(idz.solo_huecos("Usar UTC · Motivo: «por qué»", etiqueta))
+
+    def test_un_hueco_sin_cerrar_se_conserva_por_las_dudas(self):
+        # Mejor leerlo y que alguien lo revise que descartarlo adivinando.
+        self.assertFalse(idz.solo_huecos("«sin cerrar"))
+
 
 
 if __name__ == "__main__":

@@ -301,6 +301,26 @@ class TestValidadorBase(unittest.TestCase):
         errores, _ = val.validar()
         self.assertTrue(hay(errores, "T-001: falta el campo «Fuera de alcance:»"))
 
+    def _fuera_de_alcance(self, valor):
+        """Reescribe «Fuera de alcance:» de T-001 y devuelve los errores de la validación."""
+        t_path = self.repo.dir / "docs/plan/tareas/T-001.md"
+        texto = t_path.read_text(encoding="utf-8")
+        texto = texto.replace("Fuera de alcance: libros, socios y préstamos · inicio de sesión",
+                              f"Fuera de alcance: {valor}")
+        t_path.write_text(texto, encoding="utf-8", newline="\n")
+        val = va.Validador(self.repo.dir)
+        val.cargar()
+        return val.validar()[0]
+
+    def test_un_fuera_de_alcance_que_cita_entre_comillas_vale(self):
+        # Del ensayo del perfil chat-web: «» es la comilla española, no solo la marca de un hueco.
+        errores = self._fuera_de_alcance("la «vista previa» de un libro · inicio de sesión")
+        self.assertFalse(hay(errores, "falta el campo «Fuera de alcance:»"), f"salió: {errores}")
+
+    def test_el_hueco_de_la_plantilla_en_fuera_de_alcance_sigue_siendo_error(self):
+        errores = self._fuera_de_alcance("«lo que NO se construye en esta tarea, aunque parezca razonable»")
+        self.assertTrue(hay(errores, "T-001: falta el campo «Fuera de alcance:»"), f"salió: {errores}")
+
     def test_detecta_incoherencia_depende_entre_tarjeta_y_backlog(self):
         t_path = self.repo.dir / "docs/plan/tareas/T-002.md"
         texto = t_path.read_text(encoding="utf-8")

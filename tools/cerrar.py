@@ -64,7 +64,6 @@ RE_VINETA = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*\S)\s*$")
 RE_NINGUNA = re.compile(r"^(?:ninguna|ninguno)\b[\s.]*$", re.IGNORECASE)
 RE_COMMIT = re.compile(r"^(?:feat|fix|docs|test|refactor|chore|ci)(?:\([^)]+\))?!?: \S")
 RE_MOTIVO = re.compile(r"\s*·\s*Motivo:\s*", re.IGNORECASE)
-RE_HUECO = re.compile(r"«[^»]*»")
 RE_AFECTA = re.compile(re.escape(FRASE_AFECTA), re.IGNORECASE)
 RE_SOLO_SECCION = re.compile(r"solo la secci[oó]n\s+(.+?)\s*$", re.IGNORECASE)
 RE_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
@@ -93,15 +92,13 @@ def _limpiar(texto):
 
 
 def solo_huecos(texto):
-    """¿Esta viñeta es solo campos de la plantilla sin llenar?
+    """¿Esta viñeta de «Decisiones tomadas» es solo campos de la plantilla sin llenar?
 
-    La plantilla marca sus huecos con «»: «- «decisión» · Motivo: «por qué»». Pero «» es además la comilla
-    española, y el método está escrito en español, así que una decisión real puede citar algo entre comillas.
-    La diferencia está en lo que queda al quitar los huecos: en la plantilla, solo el separador; en una
-    decisión de verdad, la frase entera. Límite conocido: una decisión escrita íntegra entre comillas no se
-    distingue de un hueco, y se descarta; por eso descartar ahora lleva su propio aviso.
+    Delega en idz.solo_huecos con la etiqueta propia de una decisión. El límite conocido sigue ahí: una
+    decisión escrita íntegra entre comillas no se distingue de un hueco y se descarta, y por eso
+    descartarla lleva su propio aviso.
     """
-    return not _limpiar(RE_MOTIVO.sub(" ", RE_HUECO.sub("", texto)))
+    return idz.solo_huecos(texto, RE_MOTIVO)
 
 
 def _recortar(texto, maximo):
