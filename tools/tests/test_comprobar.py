@@ -213,7 +213,8 @@ class VerdesFalsos(unittest.TestCase):
         cfg = config(distribucion="otras-personas", plataformas=["ubuntu-24.04 · python-3.12",
                                                                  "windows-2022 · python-3.12"])
         r = Repo(self, cfg)
-        r.poner(co.REL_CI, "jobs:\n  checks:\n    runs-on: ubuntu-24.04\n    # python-3.12\n")
+        # Un workflow de verdad: la version de Python se escribe asi, no como «python-3.12».
+        r.poner(co.REL_CI, "jobs:\n  checks:\n    runs-on: ubuntu-24.04\n    steps:\n      - with:\n          python-version: \"3.12\"\n")
         res = r.paso("plataformas")
         self.assertEqual(res["estado"], co.FALLO)
         self.assertIn("windows-2022", res["detalle"])
@@ -223,6 +224,30 @@ class VerdesFalsos(unittest.TestCase):
         self.assertIn(co.REL_CI, r.paso("plataformas")["detalle"])
         r.config(config(distribucion="otras-personas", plataformas=[]))
         self.assertIn("no declaraste plataformas", r.paso("plataformas")["detalle"])
+
+    def test_4c_el_ejemplo_de_la_herramienta_pasa_con_el_CI_de_la_plantilla(self):
+        # D-01 del ensayo de entrega. «python-3.12» no aparece literal en ningun workflow: GitHub
+        # Actions escribe «python-version: "3.12"». La declaracion que sugiere --ejemplo fallaba
+        # siempre, y la prueba de arriba no lo veia porque su CI falso traia «# python-3.12» en un
+        # comentario, escrito para encajar con el codigo en vez de con un workflow de verdad.
+        real = (TOOLS.parent / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        declaradas = json.loads(co.EJEMPLO)["plataformas"]
+        r = Repo(self, config(distribucion="otras-personas", plataformas=declaradas))
+        r.poner(co.REL_CI, real)
+        res = r.paso("plataformas")
+        self.assertEqual(res["estado"], co.OK, f"{declaradas} contra el CI real: {res['detalle']}")
+
+    def test_4d_una_version_corta_se_sigue_comprobando(self):
+        # Al partir tambien por «-», «macos-14» deja los trozos «macos» y «14»: el segundo es corto y
+        # se conserva porque trae un digito. Sin eso, declarar macos-14 pasaria con un CI en macos-13.
+        r = Repo(self, config(distribucion="otras-personas", plataformas=["macos-14"]))
+        r.poner(co.REL_CI, "jobs:\n  checks:\n    runs-on: macos-13\n")
+        self.assertEqual(r.paso("plataformas")["estado"], co.FALLO)
+
+    def test_4e_los_trozos_de_una_plataforma(self):
+        self.assertEqual(co.trozos("ubuntu-24.04 · python-3.12"), ["ubuntu", "24.04", "python", "3.12"])
+        self.assertEqual(co.trozos("macos-14"), ["macos", "14"])
+        self.assertEqual(co.trozos("windows-latest"), ["windows", "latest"])
 
     def test_5_sin_version_de_producto_no_se_sabe_donde_aparece_un_fallo(self):
         # En cuanto el software vive en dos sitios hace falta saber cuál es cuál.

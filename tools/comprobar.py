@@ -423,8 +423,16 @@ def paso_plataformas(ctx: Contexto, _nombre: str) -> dict:
 
 
 def trozos(plataforma: str) -> list[str]:
-    """Partes significativas de «ubuntu-24.04 · python-3.12» para buscarlas en el workflow."""
-    return [t for t in re.split(r"[·/,\s]+", plataforma) if len(t) > 2]
+    """Partes significativas de «ubuntu-24.04 · python-3.12» para buscarlas en el workflow.
+
+    Parte también por «-», porque un workflow no escribe la plataforma como la declara el proyecto: el
+    ejemplo de «--ejemplo» dice «python-3.12» y GitHub Actions escribe «python-version: "3.12"». Así se
+    buscan «ubuntu», «24.04», «python» y «3.12», que sí aparecen. Sigue fallando lo que debe: declarar
+    «ubuntu-22.04» con un CI que corre 24.04 deja «22.04» sin aparecer. Los trozos cortos se conservan
+    cuando traen un dígito, para que «macos-14» siga comprobando el «14».
+    """
+    partes = re.split(r"[·/,\s-]+", plataforma)
+    return [t for t in partes if len(t) > 2 or any(c.isdigit() for c in t)]
 
 
 def paso_licencia(ctx: Contexto, _nombre: str) -> dict:
