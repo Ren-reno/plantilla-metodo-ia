@@ -47,6 +47,7 @@ REL_COMPROBACIONES = "comprobaciones.json"
 CLAVES_ENTORNO = ("terminal", "carpeta_parches")
 CLAVES_OPCIONALES = ("perfil",)          # tiene un valor por omisión: su ausencia no se avisa
 REL_PERFILES = "docs/perfiles"
+REL_CONTEXTO = "docs/requisitos/contexto.md"
 PERFILES = ("chat-web", "agente")
 PERFIL_POR_OMISION = "chat-web"          # el que no supone ningún acceso
 
@@ -443,6 +444,18 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
         res.avisos.append("la tarjeta es de modo estricto y ya hay tests en «Tocar:». Si es el parche 2, vuelve a "
                           "armar el bundle con --parche2; si es el parche 1, ignora este aviso")
 
+    # --- compuerta de reglas citadas: un criterio que exige una regla necesita el texto de esa regla
+    citadas, reglas = idz.citas_de_reglas(texto_t), {}
+    if citadas:
+        contenido_ctx, _ = leer_archivo(raiz, REL_CONTEXTO)
+        reglas = idz.reglas_declaradas(contenido_ctx) if contenido_ctx else {}
+        for r in citadas:
+            if r not in reglas:
+                res.negativas.append(
+                    f"la tarjeta cita {r}, pero no encuentro su texto en {REL_CONTEXTO}: nadie puede cumplir una "
+                    "regla que no está escrita, y pedirlo obliga a inventarla. Corrige el identificador en la "
+                    "tarjeta, o declara la regla en «Reglas y restricciones» del diseño y vuelve a repartirlo")
+
     if res.negativas:
         res.codigo = 1
         return res
@@ -502,6 +515,12 @@ def armar(raiz, tarea, forzar=False, parche2=False, max_kb=MAX_KB, home=None):
     lineas_env.append(f"- Perfil: {perfil}")
     p.append("## Entorno del usuario\n\n" + "\n".join(lineas_env) + "\n")
     p.append(f"## Tarjeta {t.id}\n\n" + _bloque(texto_t))
+    citadas_c = [] if REL_CONTEXTO in vistos else [r for r in citadas if r in reglas]
+    if citadas_c:
+        p.append(f"## Reglas que cita la tarjeta\n\nDe la sección «{idz.REGLAS}» del diseño "
+                 f"(`{REL_CONTEXTO}`): los criterios las exigen por su identificador, así que su texto "
+                 f"viaja aquí. No van en `Leer:` para no cargar el diseño entero.\n\n"
+                 + "\n".join(f"- **{r}** {reglas[r]}" for r in citadas_c) + "\n")
     p.append("## Documentos que la tarjeta manda leer\n")
     for ruta, contenido in leer_c:
         nota = f"La tarjeta pide la parte «#{anclas[ruta]}»; va el archivo completo.\n\n" if ruta in anclas else ""

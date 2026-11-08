@@ -31,12 +31,12 @@ def git(cwd, *args):
 
 
 def tarjeta(tid="T-002", titulo="Registrar libro", depende="T-001", leer="docs/00-LEEME-IA.md",
-            tocar="src/libros/* · tests/libros/*", modo=None):
+            tocar="src/libros/* · tests/libros/*", modo=None, criterios="  - uno"):
     lineas = [f"# {tid} · {titulo}", f"Estado: pendiente · Tamaño: S · Depende de: {depende} · Cubre: C1 (5), RF-001"]
     if modo:
         lineas.append(f"Modo: {modo}")
     lineas += ["Objetivo: algo", f"Leer (solo esto): {leer}", f"Tocar: {tocar}", "No tocar: src/prestamos/*",
-               "Fuera de alcance: nada", "Criterios de aceptación (→ tests):", "  - uno",
+               "Fuera de alcance: nada", "Criterios de aceptación (→ tests):", criterios,
                "Comando de test: ver docs/00-LEEME-IA.md", "Entrega: un parche (git diff) + reporte + comandos para aplicar"]
     return "\n".join(lineas) + "\n"
 
@@ -727,6 +727,69 @@ class LineaDeComandos(unittest.TestCase):
         r.tarjeta("T-001", depende="—")
         p = r.bundle("T-001", env={"PYTHONIOENCODING": "ascii"})
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+
+
+# ---- reglas que citan los criterios --------------------------------------------------------------
+class ReglasCitadas(unittest.TestCase):
+    """Del ensayo del perfil chat-web: un criterio exigia «el texto que define RN-01», RN-01 vivia en
+    contexto.md, que no estaba en «Leer:», y ni validar.py ni bundle.py lo notaron. El LLM tuvo que
+    inferir una regla de negocio a partir de los ejemplos aprobados."""
+
+    CTX = """# Contexto
+
+## Reglas y restricciones
+
+- **RN-01** Los importes se guardan en centavos, sin decimales.
+- **RNF-01** Solo biblioteca estandar.
+
+## Supuestos
+
+- **S-01** algo
+"""
+
+    def test_el_bundle_lleva_la_regla_que_cita_un_criterio(self):
+        r = Repo(self)
+        r.poner(bd.REL_CONTEXTO, self.CTX)
+        r.tarjeta(criterios="  - cumple el texto que define RN-01; evidencia: test")
+        res = r.armar()
+        self.assertEqual(res.codigo, 0, f"negativas: {res.negativas}")
+        self.assertIn("## Reglas que cita la tarjeta", res.texto)
+        self.assertIn("Los importes se guardan en centavos", res.texto)
+        self.assertNotIn("Solo biblioteca estandar", res.texto, "solo viaja la regla que se cita")
+
+    def test_se_niega_si_la_regla_citada_no_existe(self):
+        r = Repo(self)
+        r.poner(bd.REL_CONTEXTO, self.CTX)
+        r.tarjeta(criterios="  - cumple RN-07; evidencia: test")
+        res = r.armar()
+        self.assertEqual(res.codigo, 1)
+        self.assertTrue(hay(res.negativas, "la tarjeta cita RN-07"), f"salio: {res.negativas}")
+
+    def test_se_niega_tambien_si_no_hay_contexto_repartido(self):
+        r = Repo(self)
+        r.tarjeta(criterios="  - cumple RN-01; evidencia: test")
+        res = r.armar()
+        self.assertEqual(res.codigo, 1)
+        self.assertTrue(hay(res.negativas, "la tarjeta cita RN-01"), f"salio: {res.negativas}")
+
+    def test_no_repite_la_regla_si_contexto_ya_viaja_en_leer(self):
+        r = Repo(self)
+        r.poner(bd.REL_CONTEXTO, self.CTX)
+        r.tarjeta(leer="docs/00-LEEME-IA.md · " + bd.REL_CONTEXTO,
+                  criterios="  - cumple RN-01; evidencia: test")
+        res = r.armar()
+        self.assertEqual(res.codigo, 0, f"negativas: {res.negativas}")
+        self.assertNotIn("## Reglas que cita la tarjeta", res.texto)
+        self.assertIn("Los importes se guardan en centavos", res.texto, "va dentro del archivo de «Leer:»")
+
+    def test_una_tarjeta_que_no_cita_reglas_no_trae_la_seccion(self):
+        r = Repo(self)
+        r.poner(bd.REL_CONTEXTO, self.CTX)
+        r.tarjeta()
+        res = r.armar()
+        self.assertEqual(res.codigo, 0, f"negativas: {res.negativas}")
+        self.assertNotIn("## Reglas que cita la tarjeta", res.texto)
+
 
 
 if __name__ == "__main__":

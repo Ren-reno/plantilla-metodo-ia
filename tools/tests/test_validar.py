@@ -312,6 +312,18 @@ class TestValidadorBase(unittest.TestCase):
         val.cargar()
         return val.validar()[0]
 
+    def test_avisa_si_un_criterio_cita_una_regla_que_no_existe(self):
+        # Del ensayo del perfil chat-web: una tarjeta exigia cumplir una regla cuyo texto no viajaba.
+        t_path = self.repo.dir / "docs/plan/tareas/T-001.md"
+        texto = t_path.read_text(encoding="utf-8")
+        texto = texto.replace("  - Un test de humo pasa en local",
+                              "  - Un test de humo pasa en local y cumple RN-09")
+        t_path.write_text(texto, encoding="utf-8", newline="\n")
+        val = va.Validador(self.repo.dir)
+        val.cargar()
+        _, avisos = val.validar()
+        self.assertTrue(hay(avisos, "T-001: un criterio cita RN-09"), f"salio: {avisos}")
+
     def test_un_fuera_de_alcance_que_cita_entre_comillas_vale(self):
         # Del ensayo del perfil chat-web: «» es la comilla española, no solo la marca de un hueco.
         errores = self._fuera_de_alcance("la «vista previa» de un libro · inicio de sesión")

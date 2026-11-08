@@ -137,6 +137,7 @@ class Validador:
 
         # Estado cargado del repo
         self.criterios_diseno: dict[str, dict] = {}
+        self.reglas_diseno: dict[str, str] = {}   # RN/RNF de contexto.md, por identificador
         self.rfs_diseno: dict[str, dict] = {}
         self.adrs_diseno: dict[str, str] = {}  # num -> estado ("propuesta", "aceptada", etc.)
         self.backlog: ip.BacklogGuardado | None = None
@@ -198,6 +199,7 @@ class Validador:
                     desc = celdas[1]
                     peso = celdas[2]
                     self.criterios_diseno[cid] = {"id": cid, "desc": desc, "peso": peso}
+            self.reglas_diseno = idz.reglas_declaradas(texto)
 
         req_dir = self.raiz / "docs" / "requisitos"
         if req_dir.is_dir():
@@ -456,6 +458,13 @@ class Validador:
             fa = t_card["fuera_de_alcance"]
             if fa is None or not fa.strip() or fa.strip() in ip.VACIOS or idz.solo_huecos(fa):
                 self.error(f"{tid}: falta el campo «Fuera de alcance:» (debe indicar explícitamente qué NO se construye; D16).")
+
+            # 2b. Una regla citada por un criterio tiene que existir: si no, el bundle la inventa
+            for rid in idz.citas_de_reglas(" · ".join(t_card["criterios"] or [])):
+                if rid not in self.reglas_diseno:
+                    self.aviso(f"{tid}: un criterio cita {rid}, que no está declarado en «Reglas y "
+                               "restricciones» del diseño. bundle.py se negará a armar su paquete, porque una "
+                               "tarea no puede cumplir una regla que nadie escribió.")
 
             # 3. Coherencia con el backlog
             if RE_ID_TAREA.match(tid):
