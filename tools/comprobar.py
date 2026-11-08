@@ -423,8 +423,16 @@ def paso_plataformas(ctx: Contexto, _nombre: str) -> dict:
 
 
 def trozos(plataforma: str) -> list[str]:
-    """Partes significativas de «ubuntu-24.04 · python-3.12» para buscarlas en el workflow."""
-    return [t for t in re.split(r"[·/,\s]+", plataforma) if len(t) > 2]
+    """Partes significativas de «ubuntu-24.04 · python-3.12» para buscarlas en el workflow.
+
+    Parte también por «-», porque un workflow no escribe la plataforma como la declara el proyecto: el
+    ejemplo de «--ejemplo» dice «python-3.12» y GitHub Actions escribe «python-version: "3.12"». Así se
+    buscan «ubuntu», «24.04», «python» y «3.12», que sí aparecen. Sigue fallando lo que debe: declarar
+    «ubuntu-22.04» con un CI que corre 24.04 deja «22.04» sin aparecer. Los trozos cortos se conservan
+    cuando traen un dígito, para que «macos-14» siga comprobando el «14».
+    """
+    partes = re.split(r"[·/,\s-]+", plataforma)
+    return [t for t in partes if len(t) > 2 or any(c.isdigit() for c in t)]
 
 
 def paso_licencia(ctx: Contexto, _nombre: str) -> dict:
@@ -462,25 +470,38 @@ def paso_datos(ctx: Contexto, _nombre: str) -> dict:
         return resultado("datos", FALLO, f"faltan datos de ejemplo de {', '.join(faltan)} en {rel_fix}: "
                                          "una actualización que no se prueba con datos viejos es la "
                                          "forma más fácil de perder los del usuario")
-    if not alguna_prueba_menciona(ctx.raiz, rel_fix):
-        return resultado("datos", FALLO, f"ninguna prueba de tests/ menciona {rel_fix}: los datos "
-                                         "viejos están, pero nadie los usa para comprobar la migración")
+    nombres = sorted(p.name for p in carpeta.iterdir() if p.is_file())
+    if not alguna_prueba_menciona(ctx.raiz, rel_fix, *nombres):
+        return resultado("datos", FALLO, f"ninguna prueba de tests/ menciona {rel_fix} ni ninguno de sus "
+                                         "archivos: los datos viejos están, pero nadie los usa para "
+                                         "comprobar la migración")
     return resultado("datos", OK, f"datos en versión {version}, con ejemplos de las {version - 1} "
                                   "anteriores usados por alguna prueba")
 
 
-def alguna_prueba_menciona(raiz: Path, texto: str) -> bool:
+def alguna_prueba_menciona(raiz: Path, *textos: str) -> bool:
+    """¿Alguna prueba de tests/ menciona alguno de estos textos?
+
+    Se buscan la ruta declarada de los fixtures y también los nombres de los archivos que hay dentro.
+    Una prueba escrita de forma portable arma la ruta por segmentos y relativa a sí misma
+    —Path(__file__).parents[1] / "fixtures" / "datos"— así que no contiene la ruta literal, pero sí
+    nombra el archivo de datos que usa. Exigir solo la cadena literal dejaba dos salidas, las dos
+    malas: escribir una ruta relativa al directorio de trabajo, que se rompe según desde dónde corras
+    las pruebas, o poner la cadena en un comentario para contentar la comprobación.
+    """
     carpeta = raiz / "tests"
     if not carpeta.is_dir():
         return False
+    buscados = [x for x in textos if x]
     for p in carpeta.rglob("*"):
         if not p.is_file() or p.suffix.lower() in (".pyc", ".png", ".jpg", ".zip", ".sqlite3"):
             continue
         try:
-            if texto in p.read_text(encoding="utf-8", errors="replace"):
-                return True
+            contenido = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
+        if any(x in contenido for x in buscados):
+            return True
     return False
 
 
