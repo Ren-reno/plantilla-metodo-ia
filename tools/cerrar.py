@@ -64,6 +64,7 @@ RE_VINETA = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*\S)\s*$")
 RE_NINGUNA = re.compile(r"^(?:ninguna|ninguno)\b[\s.]*$", re.IGNORECASE)
 RE_COMMIT = re.compile(r"^(?:feat|fix|docs|test|refactor|chore|ci)(?:\([^)]+\))?!?: \S")
 RE_MOTIVO = re.compile(r"\s*·\s*Motivo:\s*", re.IGNORECASE)
+RE_HUECO = re.compile(r"«[^»]*»")
 RE_AFECTA = re.compile(re.escape(FRASE_AFECTA), re.IGNORECASE)
 RE_SOLO_SECCION = re.compile(r"solo la secci[oó]n\s+(.+?)\s*$", re.IGNORECASE)
 RE_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
@@ -89,6 +90,18 @@ def _limpiar(texto):
     """Quita los adornos de los bordes de una decisión y el separador « · » (que es el de las líneas de ADR)."""
     t = re.sub(r"\s+", " ", texto).replace("·", "-").strip()
     return t.strip(" .,;:-").strip()
+
+
+def solo_huecos(texto):
+    """¿Esta viñeta es solo campos de la plantilla sin llenar?
+
+    La plantilla marca sus huecos con «»: «- «decisión» · Motivo: «por qué»». Pero «» es además la comilla
+    española, y el método está escrito en español, así que una decisión real puede citar algo entre comillas.
+    La diferencia está en lo que queda al quitar los huecos: en la plantilla, solo el separador; en una
+    decisión de verdad, la frase entera. Límite conocido: una decisión escrita íntegra entre comillas no se
+    distingue de un hueco, y se descarta; por eso descartar ahora lleva su propio aviso.
+    """
+    return not _limpiar(RE_MOTIVO.sub(" ", RE_HUECO.sub("", texto)))
 
 
 def _recortar(texto, maximo):
@@ -202,8 +215,13 @@ class Reporte:
                                 "no encontré viñetas en «Decisiones tomadas»: lo traté como una sola decisión"))
         for partes in grupos:
             crudo = " ".join(partes)
-            if "«" in crudo or "»" in crudo:
-                continue  # un campo de la plantilla sin llenar: ya lo avisa «sin llenar»
+            if solo_huecos(crudo):
+                # Se descarta, pero se dice: una decisión que desaparece en silencio no llega a ser ADR, y
+                # entonces ESTADO.md anuncia que no hay nada que decidir.
+                self.avisos.append((self.secciones["Decisiones tomadas"][0],
+                                    "descarté una decisión porque solo trae campos de la plantilla sin "
+                                    f"llenar: {crudo[:50]}"))
+                continue
             afecta = bool(RE_AFECTA.search(crudo))
             partido = RE_MOTIVO.split(RE_AFECTA.sub("", crudo), maxsplit=1)
             titulo = _limpiar(partido[0])
