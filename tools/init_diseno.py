@@ -50,6 +50,7 @@ FLUJOS = "Flujos principales"
 CRITERIOS = "Criterios de éxito"
 PREGUNTAS = "Preguntas abiertas"
 SUPUESTOS = "Supuestos"
+REGLAS = "Reglas y restricciones"
 # Todo lo que no es requisito, decisión ni modelo termina en contexto.md.
 CONTEXTO = [s for s in SECCIONES if s not in (FUNCIONALIDADES, DECISIONES, MODELO)]
 ESTADOS_ADR = ("propuesta", "aceptada", "reemplazada")
@@ -69,6 +70,42 @@ RE_BLOQUEA = re.compile(r"\[BLOQUEA\s+(T-\d+)\]")
 RE_RESUELTA = re.compile(r"\[RESUELTA\s*(?:→|->)\s*(ADR-\d{4})\]")
 RE_VINETA = re.compile(r"^\s*[-*]\s+\S")
 RE_HUECO = re.compile(r"«[^»]*»")
+RE_REGLA = re.compile(r"\b(RN-\d+|RNF-\d+)\b")
+RE_REGLA_DEF = re.compile(r"^-\s+\*\*(RN-\d+|RNF-\d+)\*\*\s*(.*\S)\s*$")
+
+
+def reglas_declaradas(texto):
+    """{id: texto} de las reglas RN/RNF que declara un contexto.md ya repartido.
+
+    Son la sección «Reglas y restricciones» del diseño, que este script deja en
+    docs/requisitos/contexto.md. Las tarjetas las citan por su identificador dentro de los criterios
+    («el texto que define RN-01»), así que quien arma un bundle necesita poder llevar su texto: un
+    criterio que exige una regla cuyo texto no viaja obliga al LLM a adivinarla.
+    """
+    lineas = texto.splitlines()
+    tipos = clasificar(lineas)
+    reglas, dentro = {}, False
+    for i, linea in enumerate(lineas):
+        if tipos[i] != "t":
+            continue
+        enc = RE_ENCABEZADO.match(linea)
+        if enc:
+            dentro = len(enc.group(1)) == 2 and enc.group(2).strip() == REGLAS
+            continue
+        if dentro:
+            m = RE_REGLA_DEF.match(linea.strip())
+            if m:
+                reglas.setdefault(m.group(1), m.group(2))
+    return reglas
+
+
+def citas_de_reglas(texto):
+    """Los identificadores RN/RNF que menciona un texto, en el orden en que aparecen y sin repetir."""
+    vistos = []
+    for m in RE_REGLA.finditer(texto or ""):
+        if m.group(1) not in vistos:
+            vistos.append(m.group(1))
+    return vistos
 
 
 def solo_huecos(texto, quitar=None):

@@ -6,7 +6,7 @@ Este archivo viaja dentro de cada bundle. Léelo completo antes de escribir nada
 
 Recibes un **bundle** con **una** tarea. Haces solo esa tarea y entregas como dice tu perfil (ver «Cómo entregas»).
 
-El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usuario» · la tarjeta de la tarea · los documentos que la tarjeta manda leer, con estas reglas, el anexo de tu perfil y, si el proyecto ya los declaró, sus comandos (`comprobaciones.json`) · el contenido actual de los archivos de `Tocar:` que ya existen.
+El bundle trae, en este orden: el árbol actual del repo · el «Entorno del usuario» · la tarjeta de la tarea · las reglas (RN/RNF) que citan sus criterios, si cita alguna · los documentos que la tarjeta manda leer, con estas reglas, el anexo de tu perfil y, si el proyecto ya los declaró, sus comandos (`comprobaciones.json`) · el contenido actual de los archivos de `Tocar:` que ya existen.
 
 ## Reglas
 
@@ -43,7 +43,7 @@ Va en toda entrega, en cualquier perfil. Sigue `docs/plantillas/reporte.md`: sei
 
 - *Decisiones tomadas* puede decir «ninguna». Si una decisión afecta a otras tareas, termina su línea con «Afecta a otras tareas».
 - En correcciones, *Hecho* explica fallo, resultado esperado, causa y solución; *Cómo probar* conserva reproducción y evidencia. En UI, indica referencias, versión, estados/tamaños y quién revisó; no inventes aprobación humana.
-- Di qué verificaste y qué **no** (por ejemplo, el CI de GitHub). No afirmes haber corrido algo que no corriste.
+- En *Cómo probar*, dos viñetas con estos nombres exactos: `Verificado:` lo que comprobaste de verdad y cómo, y `No verificado:` lo que no pudiste comprobar (por ejemplo, el CI de GitHub). `cerrar.py` las busca así. No afirmes haber corrido algo que no corriste.
 
 ## Cómo entregas: tu perfil
 

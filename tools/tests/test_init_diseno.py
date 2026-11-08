@@ -331,6 +331,51 @@ class LineaDeComandos(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
+class ReglasDeclaradas(unittest.TestCase):
+    """El lector de la seccion «Reglas y restricciones» de un contexto.md repartido. Lo usan bundle.py,
+    para llevar en el paquete el texto de las reglas que la tarjeta cita, y validar.py para avisar."""
+
+    CTX = """# Contexto
+
+## Alcance (dentro / fuera)
+
+- Dentro: **RN-99** esto no cuenta, esta en otra seccion
+
+## Reglas y restricciones
+
+- **RN-01** Los importes se guardan en centavos.
+- **RNF-01** Solo biblioteca estandar.
+
+## Supuestos
+
+- **S-01** algo
+"""
+
+    def test_lee_solo_las_de_su_seccion(self):
+        reglas = idz.reglas_declaradas(self.CTX)
+        self.assertEqual(sorted(reglas), ["RN-01", "RNF-01"])
+        self.assertEqual(reglas["RN-01"], "Los importes se guardan en centavos.")
+
+    def test_un_contexto_sin_esa_seccion_no_declara_nada(self):
+        sin_reglas = """# Contexto
+
+## Supuestos
+
+- **S-01** algo
+"""
+        self.assertEqual(idz.reglas_declaradas(sin_reglas), {})
+
+    def test_las_citas_salen_en_orden_y_sin_repetir(self):
+        texto = "cumple RN-02 y RN-01; otra vez RN-02 y ademas RNF-01"
+        self.assertEqual(idz.citas_de_reglas(texto), ["RN-02", "RN-01", "RNF-01"])
+
+    def test_no_confunde_identificadores_que_empiezan_igual(self):
+        self.assertEqual(idz.citas_de_reglas("cumple RN-010 pero no RN-01x"), ["RN-010"])
+
+    def test_sin_citas_devuelve_la_lista_vacia(self):
+        self.assertEqual(idz.citas_de_reglas("no cita ninguna regla"), [])
+
+
 class SoloHuecos(unittest.TestCase):
     """El ayudante que distingue un hueco de la plantilla de una comilla española en prosa.
     Vive aquí porque init_diseno es el dueño de esa heurística; lo usan cerrar.py y validar.py."""
