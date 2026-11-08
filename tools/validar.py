@@ -454,7 +454,7 @@ class Validador:
 
             # 2. Regla D16: Fuera de alcance obligatorio
             fa = t_card["fuera_de_alcance"]
-            if fa is None or not fa.strip() or fa.strip() in ip.VACIOS or "«" in fa:
+            if fa is None or not fa.strip() or fa.strip() in ip.VACIOS or idz.solo_huecos(fa):
                 self.error(f"{tid}: falta el campo «Fuera de alcance:» (debe indicar explícitamente qué NO se construye; D16).")
 
             # 3. Coherencia con el backlog

@@ -68,6 +68,25 @@ RE_PENDIENTE = re.compile(r"\[PENDIENTE\s+(P-\d+)\]")
 RE_BLOQUEA = re.compile(r"\[BLOQUEA\s+(T-\d+)\]")
 RE_RESUELTA = re.compile(r"\[RESUELTA\s*(?:→|->)\s*(ADR-\d{4})\]")
 RE_VINETA = re.compile(r"^\s*[-*]\s+\S")
+RE_HUECO = re.compile(r"«[^»]*»")
+
+
+def solo_huecos(texto, quitar=None):
+    """¿Este texto es solo campos de la plantilla sin llenar?
+
+    La plantilla marca sus huecos con «»: «Fuera de alcance: «lo que NO se construye»». Pero «» es además
+    la comilla española, y el método está escrito en español, así que un valor real puede citar algo entre
+    comillas. La diferencia está en lo que queda al quitar los huecos: en la plantilla no queda nada, o
+    solo separadores; en un valor de verdad queda el texto.
+
+    «quitar» es la expresión regular de las etiquetas estructurales del campo, si tiene alguna (por
+    ejemplo «· Motivo:» en una decisión de reporte). Límite conocido: un valor escrito íntegro entre
+    comillas no se distingue de un hueco, así que quien lo use debe decir qué descarta.
+    """
+    resto = RE_HUECO.sub("", texto or "")
+    if quitar is not None:
+        resto = quitar.sub(" ", resto)
+    return not resto.strip(" 	·-.,;:")
 
 
 def clasificar(lineas):
